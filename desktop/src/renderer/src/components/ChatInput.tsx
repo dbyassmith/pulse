@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, FormEvent, KeyboardEvent, ChangeEvent } from 'react'
+import { ArrowUp } from 'lucide-react'
 
 interface Props {
   onSend: (prompt: string) => void
@@ -19,7 +20,9 @@ function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setValue(e.target.value)
-    autoResize()
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px'
   }
 
   const handleSubmit = (e: FormEvent): void => {
@@ -39,45 +42,50 @@ function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={1}
-        style={{
-          ...styles.input,
-          opacity: disabled ? 0.5 : 1
-        }}
-      />
-      <button
-        type="submit"
-        disabled={disabled || !value.trim()}
-        style={{
-          ...styles.button,
-          opacity: disabled || !value.trim() ? 0.4 : 1
-        }}
-      >
-        Send
-      </button>
+      <div style={styles.inputWrapper}>
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={1}
+          style={{
+            ...styles.input,
+            opacity: disabled ? 0.5 : 1
+          }}
+        />
+        <button
+          type="submit"
+          disabled={disabled || !value.trim()}
+          style={{
+            ...styles.button,
+            opacity: disabled || !value.trim() ? 0.3 : 1
+          }}
+        >
+          <ArrowUp size={14} />
+        </button>
+      </div>
     </form>
   )
 }
 
 const styles = {
   form: {
-    display: 'flex',
-    gap: 8,
     padding: '14px 20px 18px',
     background: '#F0E2C8',
     borderTop: '1px solid rgba(0,0,0,0.06)',
     flexShrink: 0
   } as React.CSSProperties,
+  inputWrapper: {
+    position: 'relative' as const,
+    width: '100%'
+  } as React.CSSProperties,
   input: {
-    flex: 1,
+    width: '100%',
     padding: '14px 16px',
+    paddingRight: 40,
     border: '1px solid rgba(0,0,0,0.08)',
     borderRadius: 12,
     fontSize: 14,
@@ -85,18 +93,24 @@ const styles = {
     outline: 'none',
     fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     resize: 'none',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    boxSizing: 'border-box' as const
   } as React.CSSProperties,
   button: {
-    padding: '14px 20px',
+    position: 'absolute' as const,
+    right: 8,
+    bottom: 8,
+    width: 26,
+    height: 26,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     border: 'none',
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 600,
+    borderRadius: 8,
     background: '#1a1a1a',
     color: '#fff',
     cursor: 'pointer',
-    flexShrink: 0
+    padding: 0
   } as React.CSSProperties
 }
 
