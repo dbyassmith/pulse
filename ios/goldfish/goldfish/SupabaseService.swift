@@ -39,7 +39,7 @@ final class SupabaseService {
         let today = Self.todayString()
         let dates: [UpcomingDate] = try await client
             .from("confirmed_dates")
-            .select("id, title, date, confidence, category")
+            .select("id, title, date, confidence, category, source, notes, created_at")
             .gte("date", value: today)
             .order("date", ascending: true)
             .execute()
@@ -58,6 +58,30 @@ final class SupabaseService {
             .execute()
             .value
         return dates
+    }
+
+    func updateDate(_ date: UpcomingDate) async throws {
+        struct DateUpdate: Encodable {
+            let title: String
+            let date: String
+            let confidence: String
+            let category: String?
+            let source: String?
+            let notes: String?
+        }
+        let payload = DateUpdate(
+            title: date.title,
+            date: date.date,
+            confidence: date.confidence,
+            category: date.category,
+            source: date.source,
+            notes: date.notes
+        )
+        try await client
+            .from("confirmed_dates")
+            .update(payload)
+            .eq("id", value: date.id)
+            .execute()
     }
 
     func deleteDate(id: String) async throws {

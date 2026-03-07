@@ -23,34 +23,46 @@ struct ContentView: View {
                     )
                 } else {
                     List(dates) { date in
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(date.title)
-                                    .font(.body)
-                                HStack(spacing: 6) {
-                                    Text(date.displayDate)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    if let category = date.category {
-                                        HStack(spacing: 3) {
-                                            Image(systemName: date.categoryIcon)
-                                                .font(.caption2)
-                                            Text(category.uppercased())
-                                                .font(.caption2)
-                                                .fontWeight(.medium)
+                        NavigationLink {
+                            EventDetailView(date: date, onDelete: {
+                                Task { await deleteDate(date) }
+                            }, onUpdate: { updated in
+                                if let idx = dates.firstIndex(where: { $0.id == updated.id }) {
+                                    dates[idx] = updated
+                                }
+                                SharedDefaults.write(Array(dates.prefix(4)))
+                                WidgetCenter.shared.reloadAllTimelines()
+                            })
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(date.title)
+                                        .font(.body)
+                                    HStack(spacing: 6) {
+                                        Text(date.displayDate)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        if let category = date.category {
+                                            HStack(spacing: 3) {
+                                                Image(systemName: date.categoryIcon)
+                                                    .font(.caption2)
+                                                Text(category.uppercased())
+                                                    .font(.caption2)
+                                                    .fontWeight(.medium)
+                                            }
+                                            .foregroundStyle(.secondary)
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 1)
+                                            .background(.quaternary)
+                                            .clipShape(Capsule())
                                         }
-                                        .foregroundStyle(.secondary)
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 1)
-                                        .background(.quaternary)
-                                        .clipShape(Capsule())
                                     }
                                 }
+                                Spacer()
+                                Text(date.daysRemainingText)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
                             }
-                            Spacer()
-                            Text(date.daysRemainingText)
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
                         }
                         .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
                         .listRowBackground(Color(red: 0xF8/255, green: 0xED/255, blue: 0xD9/255))

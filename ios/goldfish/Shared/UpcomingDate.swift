@@ -2,13 +2,13 @@ import Foundation
 
 struct UpcomingDate: Codable, Identifiable {
     let id: String
-    let title: String
-    let date: String
-    let confidence: String
-    let category: String?
-    let source: String?
-    let notes: String?
-    let created_at: String?
+    var title: String
+    var date: String
+    var confidence: String
+    var category: String?
+    var source: String? = nil
+    var notes: String? = nil
+    var created_at: String? = nil
 
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
