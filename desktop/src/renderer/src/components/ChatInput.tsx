@@ -25,13 +25,13 @@ function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <input
-        type="text"
+      <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
+        rows={1}
         style={{
           ...styles.input,
           opacity: disabled ? 0.5 : 1
@@ -68,7 +68,8 @@ const styles = {
     fontSize: 14,
     background: '#fff',
     outline: 'none',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    resize: 'none'
   } as React.CSSProperties,
   button: {
     padding: '14px 20px',
