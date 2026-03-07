@@ -72,20 +72,13 @@ function DatesList(): JSX.Element {
     <div style={styles.list}>
       {dates.map((date) => (
         <div key={date.id} style={styles.row}>
+          {(() => {
+            const Icon = categoryIcons[date.category ?? ''] ?? Tag
+            return <Icon size={16} style={styles.categoryIcon} />
+          })()}
           <div style={styles.rowLeft}>
             <span style={styles.dateTitle}>{date.title}</span>
-            <div style={styles.dateMeta}>
-              <span style={styles.dateDate}>{formatDate(date.date)}</span>
-              {date.category && (() => {
-                const Icon = categoryIcons[date.category] ?? Tag
-                return (
-                  <span style={styles.categoryBadge}>
-                    <Icon size={11} />
-                    {date.category.toUpperCase()}
-                  </span>
-                )
-              })()}
-            </div>
+            <span style={styles.dateDate}>{formatDate(date.date)}</span>
           </div>
           <span style={styles.daysUntil}>{daysUntil(date.date)}</span>
         </div>
@@ -104,39 +97,29 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     padding: '12px 0',
     borderBottom: '1px solid rgba(0,0,0,0.06)'
+  } as React.CSSProperties,
+  categoryIcon: {
+    color: '#888',
+    flexShrink: 0
   } as React.CSSProperties,
   rowLeft: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 2
+    gap: 2,
+    flex: 1,
+    minWidth: 0
   } as React.CSSProperties,
   dateTitle: {
     fontSize: 15,
     fontWeight: 500,
     color: '#1a1a1a'
   } as React.CSSProperties,
-  dateMeta: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6
-  } as React.CSSProperties,
   dateDate: {
     fontSize: 13,
     color: '#888'
-  } as React.CSSProperties,
-  categoryBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 3,
-    fontSize: 10,
-    fontWeight: 500,
-    color: '#888',
-    background: 'rgba(0,0,0,0.05)',
-    padding: '1px 5px',
-    borderRadius: 8
   } as React.CSSProperties,
   daysUntil: {
     fontSize: 13,
