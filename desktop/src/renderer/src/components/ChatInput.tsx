@@ -56,16 +56,18 @@ function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
             opacity: disabled ? 0.5 : 1
           }}
         />
-        <button
-          type="submit"
-          disabled={disabled || !value.trim()}
-          style={{
-            ...styles.button,
-            opacity: disabled || !value.trim() ? 0.3 : 1
-          }}
-        >
-          <ArrowUp size={14} />
-        </button>
+        <div style={styles.toolbar}>
+          <button
+            type="submit"
+            disabled={disabled || !value.trim()}
+            style={{
+              ...styles.button,
+              opacity: disabled || !value.trim() ? 0.3 : 1
+            }}
+          >
+            <ArrowUp size={16} />
+          </button>
+        </div>
       </div>
     </form>
   )
@@ -79,34 +81,43 @@ const styles = {
     flexShrink: 0
   } as React.CSSProperties,
   inputWrapper: {
-    position: 'relative' as const,
-    width: '100%'
+    display: 'flex',
+    flexDirection: 'column' as const,
+    background: '#fff',
+    borderRadius: 20,
+    border: '1px solid rgba(0,0,0,0.08)',
+    padding: '4px 4px 4px 4px',
+    width: '100%',
+    boxSizing: 'border-box' as const
   } as React.CSSProperties,
   input: {
     width: '100%',
-    padding: '14px 16px',
-    paddingRight: 40,
-    border: '1px solid rgba(0,0,0,0.08)',
-    borderRadius: 12,
+    padding: '12px 14px',
+    border: 'none',
+    borderRadius: 0,
     fontSize: 14,
-    background: '#fff',
+    background: 'transparent',
     outline: 'none',
     fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     resize: 'none',
     overflow: 'hidden',
-    boxSizing: 'border-box' as const
+    boxSizing: 'border-box' as const,
+    lineHeight: '1.4'
+  } as React.CSSProperties,
+  toolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: '4px 8px 6px'
   } as React.CSSProperties,
   button: {
-    position: 'absolute' as const,
-    right: 8,
-    bottom: 8,
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     border: 'none',
-    borderRadius: 8,
+    borderRadius: '50%',
     background: '#1a1a1a',
     color: '#fff',
     cursor: 'pointer',
