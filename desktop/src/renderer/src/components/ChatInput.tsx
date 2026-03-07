@@ -1,4 +1,4 @@
-import { useState, FormEvent, KeyboardEvent } from 'react'
+import { useState, useRef, useCallback, FormEvent, KeyboardEvent, ChangeEvent } from 'react'
 
 interface Props {
   onSend: (prompt: string) => void
@@ -8,12 +8,26 @@ interface Props {
 
 function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
   const [value, setValue] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px'
+  }, [])
+
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
+    setValue(e.target.value)
+    autoResize()
+  }
 
   const handleSubmit = (e: FormEvent): void => {
     e.preventDefault()
     if (!value.trim() || disabled) return
     onSend(value.trim())
     setValue('')
+    requestAnimationFrame(autoResize)
   }
 
   const handleKeyDown = (e: KeyboardEvent): void => {
@@ -26,8 +40,9 @@ function ChatInput({ onSend, disabled, placeholder }: Props): JSX.Element {
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
       <textarea
+        ref={textareaRef}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
@@ -69,7 +84,8 @@ const styles = {
     background: '#fff',
     outline: 'none',
     fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    resize: 'none'
+    resize: 'none',
+    overflow: 'hidden'
   } as React.CSSProperties,
   button: {
     padding: '14px 20px',
