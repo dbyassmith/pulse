@@ -16,3 +16,4 @@ xcuserdata/
 *.xccheckout
 *.xcscmblueprint
 ios/pulse/SourcePackages/
+ios/pulse/Secrets.xcconfig
