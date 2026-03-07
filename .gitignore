@@ -17,3 +17,5 @@ xcuserdata/
 *.xcscmblueprint
 ios/pulse/SourcePackages/
 ios/pulse/Secrets.xcconfig
+agent/watchlist/*
+!agent/watchlist/.gitkeep
