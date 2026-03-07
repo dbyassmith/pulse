@@ -12,25 +12,28 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
   const [refreshKey, setRefreshKey] = useState(0)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState('')
+  const [streamingText, setStreamingText] = useState('')
   const [result, setResult] = useState<{ text: string; error?: string } | null>(null)
   const cleanupRef = useRef<(() => void)[]>([])
 
   useEffect(() => {
-    // Auto-refresh dates on focus
     const unsub = window.api.onFocus(() => {
       if (!running) setRefreshKey((k) => k + 1)
     })
 
-    // Claude event listeners
     const unsubProgress = window.api.claude.onProgress((event) => {
-      setProgress(event.text)
+      if (event.type === 'text') {
+        setStreamingText(event.text)
+      } else if (event.type === 'progress') {
+        setProgress(event.text)
+      }
     })
 
     const unsubDone = window.api.claude.onDone((res) => {
       setRunning(false)
       setProgress('')
+      setStreamingText('')
       setResult(res)
-      // Refresh dates after Claude finishes (it may have added/modified dates)
       setRefreshKey((k) => k + 1)
     })
 
@@ -43,6 +46,7 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
 
   const handleSend = async (prompt: string): Promise<void> => {
     setResult(null)
+    setStreamingText('')
     setRunning(true)
     setProgress('Starting...')
     const res = await window.api.claude.run(prompt)
@@ -68,7 +72,13 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
 
       <DatesList key={refreshKey} />
 
-      {result && (
+      {/* Show streaming text while Claude is running */}
+      {running && streamingText && (
+        <ResultCard text={streamingText} streaming onDismiss={() => {}} />
+      )}
+
+      {/* Show final result after Claude finishes */}
+      {!running && result && (
         <ResultCard
           text={result.text}
           error={result.error}

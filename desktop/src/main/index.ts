@@ -121,6 +121,20 @@ For web searches, use WebSearch tool to find dates, then add via "pulse date add
 For watchlist items, create markdown files in agent/watchlist/ following the YAML frontmatter format.
 Confidence tiers: high (official source), medium (reliable but unofficial), low (rumor/prediction).`
 
+interface ClaudeEvent {
+  type: 'progress' | 'text'
+  text: string
+}
+
+function toolNameToProgress(toolName: string): string {
+  if (toolName === 'WebSearch') return 'Searching the web...'
+  if (toolName === 'Read') return 'Reading file...'
+  if (toolName === 'Write' || toolName === 'Edit') return 'Writing file...'
+  if (toolName === 'Grep' || toolName === 'Glob') return 'Searching codebase...'
+  if (toolName === 'Bash') return 'Running command...'
+  return `Using ${toolName}...`
+}
+
 function spawnClaude(
   prompt: string,
   repoPath: string,
@@ -151,6 +165,10 @@ function spawnClaude(
   let resultText = ''
   let buffer = ''
 
+  // Track current content blocks by index
+  let currentToolName = ''
+  let currentToolInput = ''
+
   child.stdout?.on('data', (data: Buffer) => {
     buffer += data.toString()
     const lines = buffer.split('\n')
@@ -159,12 +177,52 @@ function spawnClaude(
     for (const line of lines) {
       if (!line.trim()) continue
       try {
-        const event = JSON.parse(line)
-        const parsed = parseClaudeEvent(event)
-        if (parsed) {
-          onProgress(parsed)
-          if (parsed.type === 'result') {
-            resultText = parsed.text
+        const streamEvent = JSON.parse(line)
+
+        // Unwrap the StreamEvent envelope
+        if (streamEvent.type !== 'stream_event' || !streamEvent.event) continue
+        const apiEvent = streamEvent.event
+
+        switch (apiEvent.type) {
+          case 'content_block_start': {
+            const block = apiEvent.content_block
+            if (block?.type === 'tool_use') {
+              currentToolName = block.name ?? ''
+              currentToolInput = ''
+              onProgress({ type: 'progress', text: toolNameToProgress(currentToolName) })
+            }
+            break
+          }
+
+          case 'content_block_delta': {
+            const delta = apiEvent.delta
+            if (delta?.type === 'text_delta' && delta.text) {
+              resultText += delta.text
+              onProgress({ type: 'text', text: resultText })
+            } else if (delta?.type === 'input_json_delta' && delta.partial_json) {
+              currentToolInput += delta.partial_json
+            }
+            break
+          }
+
+          case 'content_block_stop': {
+            // When a tool_use block completes, show the parsed input for context
+            if (currentToolName === 'Bash' && currentToolInput) {
+              try {
+                const parsed = JSON.parse(currentToolInput)
+                const cmd = parsed.command ?? ''
+                if (cmd.startsWith('pulse')) {
+                  onProgress({ type: 'progress', text: `Running: ${cmd}` })
+                } else if (cmd) {
+                  onProgress({ type: 'progress', text: `Running: ${cmd.slice(0, 80)}${cmd.length > 80 ? '...' : ''}` })
+                }
+              } catch {
+                // couldn't parse tool input
+              }
+            }
+            currentToolName = ''
+            currentToolInput = ''
+            break
           }
         }
       } catch {
@@ -193,38 +251,6 @@ function spawnClaude(
   })
 
   return child
-}
-
-interface ClaudeEvent {
-  type: 'progress' | 'result'
-  text: string
-}
-
-function parseClaudeEvent(event: Record<string, unknown>): ClaudeEvent | null {
-  // Handle assistant text messages
-  if (event.type === 'assistant' && event.subtype === 'text') {
-    return { type: 'result', text: event.text as string }
-  }
-
-  // Handle tool use events for progress
-  if (event.type === 'assistant' && event.subtype === 'tool_use') {
-    const toolName = event.tool_name as string
-    if (toolName === 'WebSearch') return { type: 'progress', text: 'Searching the web...' }
-    if (toolName === 'Bash') {
-      const input = event.input as Record<string, string> | undefined
-      const cmd = input?.command ?? ''
-      if (cmd.startsWith('pulse')) return { type: 'progress', text: `Running: ${cmd}` }
-      return { type: 'progress', text: 'Running command...' }
-    }
-    if (toolName === 'Read') return { type: 'progress', text: 'Reading file...' }
-    if (toolName === 'Write' || toolName === 'Edit')
-      return { type: 'progress', text: 'Writing file...' }
-    if (toolName === 'Grep' || toolName === 'Glob')
-      return { type: 'progress', text: 'Searching codebase...' }
-    return { type: 'progress', text: `Using ${toolName}...` }
-  }
-
-  return null
 }
 
 // --- Window ---

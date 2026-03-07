@@ -1,19 +1,30 @@
 interface Props {
   text: string
   error?: string
+  streaming?: boolean
   onDismiss: () => void
 }
 
-function ResultCard({ text, error, onDismiss }: Props): JSX.Element {
+function ResultCard({ text, error, streaming, onDismiss }: Props): JSX.Element {
+  const borderColor = error ? '#c0392b' : streaming ? '#3498db' : '#27ae60'
+  const label = error ? 'Error' : streaming ? 'Thinking...' : 'Result'
+
   return (
-    <div style={{ ...styles.card, borderLeft: `3px solid ${error ? '#c0392b' : '#27ae60'}` }}>
+    <div style={{ ...styles.card, borderLeft: `3px solid ${borderColor}` }}>
       <div style={styles.header}>
-        <span style={styles.label}>{error ? 'Error' : 'Result'}</span>
-        <button onClick={onDismiss} style={styles.dismiss}>
-          &times;
-        </button>
+        <span style={styles.label}>{label}</span>
+        {!streaming && (
+          <button onClick={onDismiss} style={styles.dismiss}>
+            &times;
+          </button>
+        )}
       </div>
-      <p style={styles.text}>{error || text}</p>
+      <div style={styles.textContainer}>
+        <p style={styles.text}>
+          {error || text}
+          {streaming && <span style={styles.cursor}>|</span>}
+        </p>
+      </div>
     </div>
   )
 }
@@ -24,13 +35,17 @@ const styles = {
     padding: '10px 14px',
     background: 'rgba(255,255,255,0.7)',
     borderRadius: 8,
-    flexShrink: 0
+    flexShrink: 0,
+    maxHeight: 200,
+    display: 'flex',
+    flexDirection: 'column' as const
   } as React.CSSProperties,
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4
+    marginBottom: 4,
+    flexShrink: 0
   } as React.CSSProperties,
   label: {
     fontSize: 11,
@@ -48,12 +63,21 @@ const styles = {
     padding: '0 4px',
     lineHeight: 1
   } as React.CSSProperties,
+  textContainer: {
+    overflowY: 'auto' as const,
+    flex: 1
+  } as React.CSSProperties,
   text: {
     fontSize: 13,
     color: '#1a1a1a',
     margin: 0,
     lineHeight: 1.5,
     whiteSpace: 'pre-wrap' as const
+  } as React.CSSProperties,
+  cursor: {
+    animation: 'blink 1s step-end infinite',
+    color: '#3498db',
+    fontWeight: 700
   } as React.CSSProperties
 }
 
