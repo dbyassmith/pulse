@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import DatesList from './DatesList'
+import WatchlistList from './WatchlistList'
 import ChatInput from './ChatInput'
-import ResultCard from './ResultCard'
+import ChatPane from './ChatPane'
 
 interface Props {
   claudeAvailable: boolean
@@ -9,11 +10,14 @@ interface Props {
 }
 
 function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'watchlist'>('upcoming')
   const [refreshKey, setRefreshKey] = useState(0)
   const [running, setRunning] = useState(false)
-  const [progress, setProgress] = useState('')
   const [streamingText, setStreamingText] = useState('')
   const [result, setResult] = useState<{ text: string; error?: string } | null>(null)
+  const [userPrompt, setUserPrompt] = useState('')
+  const [showPane, setShowPane] = useState(false)
+  const [statusMessages, setStatusMessages] = useState<string[]>([])
   const cleanupRef = useRef<(() => void)[]>([])
 
   useEffect(() => {
@@ -25,13 +29,12 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
       if (event.type === 'text') {
         setStreamingText(event.text)
       } else if (event.type === 'progress') {
-        setProgress(event.text)
+        setStatusMessages((prev) => [...prev, event.text])
       }
     })
 
     const unsubDone = window.api.claude.onDone((res) => {
       setRunning(false)
-      setProgress('')
       setStreamingText('')
       setResult(res)
       setRefreshKey((k) => k + 1)
@@ -47,14 +50,28 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
   const handleSend = async (prompt: string): Promise<void> => {
     setResult(null)
     setStreamingText('')
+    setStatusMessages([])
+    setUserPrompt(prompt)
+    setShowPane(true)
     setRunning(true)
-    setProgress('Starting...')
     const res = await window.api.claude.run(prompt)
     if (res.error) {
       setRunning(false)
-      setProgress('')
       setResult({ text: '', error: res.error })
     }
+  }
+
+  const handleDismissPane = (): void => {
+    if (running) {
+      window.api.claude.cancel()
+    }
+    setShowPane(false)
+    setUserPrompt('')
+    setStatusMessages([])
+    setResult(null)
+    setStreamingText('')
+    setRunning(false)
+    setRefreshKey((k) => k + 1)
   }
 
   const handleCancel = async (): Promise<void> => {
@@ -63,38 +80,56 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
 
   return (
     <div style={styles.container}>
+      <style>{`
+        @keyframes swim {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes blink {
+          50% { opacity: 0; }
+        }
+      `}</style>
       <div style={styles.header}>
-        <h1 style={styles.title}>Pulse</h1>
+        <h1 style={styles.title}>
+          <span style={styles.swimDot} />
+          Goldfish
+        </h1>
         <button onClick={onLogout} style={styles.logoutBtn}>
           Sign Out
         </button>
       </div>
 
-      <DatesList key={refreshKey} />
+      <div style={styles.tabBar}>
+        <button
+          style={activeTab === 'upcoming' ? styles.tabActive : styles.tab}
+          onClick={() => setActiveTab('upcoming')}
+        >
+          Upcoming
+        </button>
+        <button
+          style={activeTab === 'watchlist' ? styles.tabActive : styles.tab}
+          onClick={() => setActiveTab('watchlist')}
+        >
+          Watchlist
+        </button>
+      </div>
 
-      {/* Show streaming text while Claude is running */}
-      {running && streamingText && (
-        <ResultCard text={streamingText} streaming onDismiss={() => {}} />
+      {activeTab === 'upcoming' ? (
+        <DatesList key={refreshKey} />
+      ) : (
+        <WatchlistList key={refreshKey} />
       )}
 
-      {/* Show final result after Claude finishes */}
-      {!running && result && (
-        <ResultCard
-          text={result.text}
-          error={result.error}
-          onDismiss={() => setResult(null)}
-        />
-      )}
-
-      {running && progress && (
-        <div style={styles.progressBar}>
-          <div style={styles.progressDot} />
-          <span style={styles.progressText}>{progress}</span>
-          <button onClick={handleCancel} style={styles.cancelBtn}>
-            Cancel
-          </button>
-        </div>
-      )}
+      <ChatPane
+        visible={showPane}
+        userMessage={userPrompt}
+        statusMessages={statusMessages}
+        responseText={running ? streamingText : (result?.text ?? '')}
+        streaming={running}
+        error={result?.error}
+        onClose={handleDismissPane}
+        onCancel={handleCancel}
+      />
 
       <ChatInput
         onSend={handleSend}
@@ -104,7 +139,7 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
             ? 'Claude Code CLI not found — install it to chat'
             : running
               ? 'Working...'
-              : 'Ask Pulse anything...'
+              : 'Ask Goldfish anything...'
         }
       />
     </div>
@@ -123,16 +158,28 @@ const styles = {
   header: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: '16px 20px 8px',
     WebkitAppRegion: 'drag',
-    flexShrink: 0
+    flexShrink: 0,
+    position: 'relative' as const
   } as React.CSSProperties,
   title: {
-    fontSize: 22,
-    fontWeight: 700,
+    fontSize: 15,
+    fontWeight: 600,
     margin: 0,
-    color: '#1a1a1a'
+    color: '#1a1a1a',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6
+  } as React.CSSProperties,
+  swimDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#FF8C00',
+    display: 'inline-block',
+    animation: 'swim 2s ease-in-out infinite'
   } as React.CSSProperties,
   logoutBtn: {
     background: 'none',
@@ -140,33 +187,36 @@ const styles = {
     fontSize: 13,
     color: '#888',
     cursor: 'pointer',
+    WebkitAppRegion: 'no-drag',
+    position: 'absolute' as const,
+    right: 20
+  } as React.CSSProperties,
+  tabBar: {
+    display: 'flex',
+    gap: 0,
+    padding: '0 20px',
+    borderBottom: '1px solid rgba(0,0,0,0.08)',
+    flexShrink: 0,
     WebkitAppRegion: 'no-drag'
   } as React.CSSProperties,
-  progressBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '8px 20px',
-    background: 'rgba(0,0,0,0.04)',
-    flexShrink: 0
-  } as React.CSSProperties,
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    background: '#f39c12',
-    animation: 'pulse 1.5s ease-in-out infinite'
-  } as React.CSSProperties,
-  progressText: {
-    fontSize: 13,
-    color: '#666',
-    flex: 1
-  } as React.CSSProperties,
-  cancelBtn: {
+  tab: {
     background: 'none',
     border: 'none',
-    fontSize: 12,
-    color: '#c0392b',
+    borderBottom: '2px solid transparent',
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#888',
+    cursor: 'pointer'
+  } as React.CSSProperties,
+  tabActive: {
+    background: 'none',
+    border: 'none',
+    borderBottom: '2px solid #3498db',
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#1a1a1a',
     cursor: 'pointer'
   } as React.CSSProperties
 }

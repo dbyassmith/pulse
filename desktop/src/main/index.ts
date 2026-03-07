@@ -6,11 +6,12 @@ import { spawn, ChildProcess } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import matter from 'gray-matter'
 
 const SUPABASE_URL = 'https://onlwcorsbauphzzmceru.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_jEKJ1zPdE8XZE_5RVYtGUg_N2Wy6phb'
 
-const SESSION_DIR = path.join(os.homedir(), '.pulse')
+const SESSION_DIR = path.join(os.homedir(), '.goldfish')
 const SESSION_FILE = path.join(SESSION_DIR, 'session.json')
 const CONFIG_FILE = path.join(SESSION_DIR, 'desktop-config.json')
 
@@ -113,11 +114,11 @@ function claudeIsAvailable(): boolean {
   }
 }
 
-const SYSTEM_PROMPT = `You are the Pulse agent. Read agent/CLAUDE.md for full system reference.
-Use "pulse date add" for adding confirmed dates. Always use --confidence high --source personal for personal dates.
+const SYSTEM_PROMPT = `You are the Goldfish agent. Read agent/CLAUDE.md for full system reference.
+Use "goldfish date add" for adding confirmed dates. Always use --confidence high --source personal for personal dates.
 ID convention: lowercase, hyphens, no special chars (e.g., "WWDC 2026" -> wwdc-2026).
 Never ask for confirmation — execute immediately.
-For web searches, use WebSearch tool to find dates, then add via "pulse date add".
+For web searches, use WebSearch tool to find dates, then add via "goldfish date add".
 For watchlist items, create markdown files in agent/watchlist/ following the YAML frontmatter format.
 Confidence tiers: high (official source), medium (reliable but unofficial), low (rumor/prediction).`
 
@@ -150,7 +151,7 @@ function spawnClaude(
     '--append-system-prompt',
     SYSTEM_PROMPT,
     '--allowedTools',
-    'Bash(pulse:*),Read,Write,WebSearch,Glob,Grep,Edit',
+    'Bash(goldfish:*),Read,Write,WebSearch,Glob,Grep,Edit',
     '--max-turns',
     '20'
   ]
@@ -164,10 +165,7 @@ function spawnClaude(
   activeProcess = child
   let resultText = ''
   let buffer = ''
-
-  // Track current content blocks by index
-  let currentToolName = ''
-  let currentToolInput = ''
+  let lastToolName = ''
 
   child.stdout?.on('data', (data: Buffer) => {
     buffer += data.toString()
@@ -177,53 +175,39 @@ function spawnClaude(
     for (const line of lines) {
       if (!line.trim()) continue
       try {
-        const streamEvent = JSON.parse(line)
+        const event = JSON.parse(line)
 
-        // Unwrap the StreamEvent envelope
-        if (streamEvent.type !== 'stream_event' || !streamEvent.event) continue
-        const apiEvent = streamEvent.event
-
-        switch (apiEvent.type) {
-          case 'content_block_start': {
-            const block = apiEvent.content_block
-            if (block?.type === 'tool_use') {
-              currentToolName = block.name ?? ''
-              currentToolInput = ''
-              onProgress({ type: 'progress', text: toolNameToProgress(currentToolName) })
-            }
-            break
-          }
-
-          case 'content_block_delta': {
-            const delta = apiEvent.delta
-            if (delta?.type === 'text_delta' && delta.text) {
-              resultText += delta.text
-              onProgress({ type: 'text', text: resultText })
-            } else if (delta?.type === 'input_json_delta' && delta.partial_json) {
-              currentToolInput += delta.partial_json
-            }
-            break
-          }
-
-          case 'content_block_stop': {
-            // When a tool_use block completes, show the parsed input for context
-            if (currentToolName === 'Bash' && currentToolInput) {
-              try {
-                const parsed = JSON.parse(currentToolInput)
-                const cmd = parsed.command ?? ''
-                if (cmd.startsWith('pulse')) {
-                  onProgress({ type: 'progress', text: `Running: ${cmd}` })
-                } else if (cmd) {
-                  onProgress({ type: 'progress', text: `Running: ${cmd.slice(0, 80)}${cmd.length > 80 ? '...' : ''}` })
+        // Assistant message snapshots — contain content blocks
+        if (event.type === 'assistant' && event.message?.content) {
+          const content = event.message.content as Array<Record<string, unknown>>
+          for (const block of content) {
+            if (block.type === 'tool_use' && block.name) {
+              const toolName = block.name as string
+              if (toolName !== lastToolName) {
+                lastToolName = toolName
+                let progressText = toolNameToProgress(toolName)
+                // Show bash command if available
+                if (toolName === 'Bash' && block.input) {
+                  const input = block.input as Record<string, string>
+                  if (input.command) {
+                    const cmd = input.command
+                    progressText = `Running: ${cmd.slice(0, 80)}${cmd.length > 80 ? '...' : ''}`
+                  }
                 }
-              } catch {
-                // couldn't parse tool input
+                onProgress({ type: 'progress', text: progressText })
               }
             }
-            currentToolName = ''
-            currentToolInput = ''
-            break
+            if (block.type === 'text' && block.text) {
+              resultText = block.text as string
+              onProgress({ type: 'text', text: resultText })
+            }
           }
+        }
+
+        // Final result event
+        if (event.type === 'result' && event.result) {
+          resultText = event.result as string
+          onProgress({ type: 'text', text: resultText })
         }
       } catch {
         // not valid JSON, skip
@@ -338,6 +322,41 @@ function setupIPC(): void {
     return { dates: data }
   })
 
+  // Watchlist
+  ipcMain.handle('watchlist:list', async () => {
+    const config = readConfig()
+    if (!config.repoPath) return { items: [] }
+    const watchlistDir = path.join(config.repoPath, 'agent', 'watchlist')
+    try {
+      if (!fs.existsSync(watchlistDir)) return { items: [] }
+      const files = fs.readdirSync(watchlistDir).filter((f) => f.endsWith('.md'))
+      const items = []
+      for (const file of files) {
+        try {
+          const content = fs.readFileSync(path.join(watchlistDir, file), 'utf-8')
+          const { data } = matter(content)
+          if (data.title && data.id) {
+            items.push({
+              id: data.id,
+              title: data.title,
+              type: data.type || 'one-time',
+              category: data.category,
+              added: data.added,
+              confidence_threshold: data.confidence_threshold,
+              last_checked: data.last_checked,
+              notes: data.notes
+            })
+          }
+        } catch {
+          // skip malformed files
+        }
+      }
+      return { items }
+    } catch {
+      return { items: [] }
+    }
+  })
+
   // Config
   ipcMain.handle('config:get', () => {
     return readConfig()
@@ -355,7 +374,7 @@ function setupIPC(): void {
     const { dialog } = require('electron')
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory'],
-      title: 'Select Pulse repo directory'
+      title: 'Select Goldfish repo directory'
     })
     if (result.canceled || result.filePaths.length === 0) return { path: null }
     const selected = result.filePaths[0]
@@ -364,7 +383,7 @@ function setupIPC(): void {
     const hasClaudeDir = fs.existsSync(path.join(selected, '.claude'))
     const hasCliDir = fs.existsSync(path.join(selected, 'cli'))
     if (!hasClaudeDir || !hasCliDir) {
-      return { path: null, error: 'Not a valid Pulse repo (missing .claude/ or cli/ directory)' }
+      return { path: null, error: 'Not a valid Goldfish repo (missing .claude/ or cli/ directory)' }
     }
 
     const config = readConfig()
@@ -419,7 +438,7 @@ function setupIPC(): void {
 // --- App lifecycle ---
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.pulse.desktop')
+  electronApp.setAppUserModelId('com.goldfish.desktop')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

@@ -12,7 +12,7 @@ deepened: 2026-03-06
 **Research agents used:** Security Sentinel, Architecture Strategist, Performance Oracle, Context7 (Supabase Swift SDK), Web Search (WidgetKit, BGTaskScheduler, App Group patterns)
 
 ### Key Improvements
-1. **Critical bug fix**: BGTaskScheduler registration must be in `pulseApp.init()`, not `.onAppear` -- system can wake app before any view appears
+1. **Critical bug fix**: BGTaskScheduler registration must be in `goldfishApp.init()`, not `.onAppear` -- system can wake app before any view appears
 2. **Performance**: Add `LIMIT` to Supabase query to prevent unbounded growth
 3. **Security**: Move Supabase credentials to `.xcconfig` file excluded from source control; use Keychain for auth tokens
 4. **Widget accuracy**: Add midnight timeline entries so "days remaining" labels stay correct across day boundaries
@@ -31,11 +31,11 @@ deepened: 2026-03-06
 
 ## Overview
 
-Add a medium-size iOS home screen widget that displays the next 4 upcoming confirmed dates from the Pulse database. The main app fetches from Supabase, writes to shared UserDefaults via App Groups, and the widget reads from there. Background App Refresh keeps data current even when the app isn't open.
+Add a medium-size iOS home screen widget that displays the next 4 upcoming confirmed dates from the Goldfish database. The main app fetches from Supabase, writes to shared UserDefaults via App Groups, and the widget reads from there. Background App Refresh keeps data current even when the app isn't open.
 
 ## Problem Statement / Motivation
 
-The Pulse system already tracks confirmed event dates via the CLI agent, but there's no passive way to see upcoming dates at a glance. An iOS widget provides ambient awareness of approaching events without opening an app.
+The Goldfish system already tracks confirmed event dates via the CLI agent, but there's no passive way to see upcoming dates at a glance. An iOS widget provides ambient awareness of approaching events without opening an app.
 
 ## Proposed Solution
 
@@ -51,11 +51,11 @@ Supabase (confirmed_dates table)
    - Calls WidgetCenter.shared.reloadTimelines(ofKind:)
         |
         v
-   Shared UserDefaults (App Group: group.com.dbyassmith.pulse)
+   Shared UserDefaults (App Group: group.com.dbyassmith.goldfish)
    Key: "upcomingDates" -> JSON-encoded [UpcomingDate]
         |
         v
-   PulseWidget (medium size)
+   GoldfishWidget (medium size)
    - Reads from shared UserDefaults
    - Displays 4 rows: title + days remaining
    - Refreshes daily around 9am + midnight for label accuracy
@@ -78,7 +78,7 @@ Supabase (confirmed_dates table)
 A `Codable` struct used by both targets, placed in a shared file added to both targets:
 
 ```swift
-// ios/pulse/Shared/UpcomingDate.swift
+// ios/goldfish/Shared/UpcomingDate.swift
 struct UpcomingDate: Codable, Identifiable {
     let id: String
     let title: String
@@ -110,13 +110,13 @@ struct UpcomingDate: Codable, Identifiable {
 **Performance Note:**
 - Use `Locale(identifier: "en_US_POSIX")` on `DateFormatter` to avoid locale-dependent parsing issues (e.g., 12-hour vs 24-hour clock settings affecting date parsing).
 
-Stored as a JSON-encoded `[UpcomingDate]` array under key `"upcomingDates"` in `UserDefaults(suiteName: "group.com.dbyassmith.pulse")`. Always sorted by date ascending, filtered to future dates only.
+Stored as a JSON-encoded `[UpcomingDate]` array under key `"upcomingDates"` in `UserDefaults(suiteName: "group.com.dbyassmith.goldfish")`. Always sorted by date ascending, filtered to future dates only.
 
 ### Dependencies
 
 Add the **Supabase Swift SDK** via Swift Package Manager:
 - Package URL: `https://github.com/supabase/supabase-swift`
-- Add to the `pulse` app target only (widget doesn't need it)
+- Add to the `goldfish` app target only (widget doesn't need it)
 
 ### Research Insights (Credentials)
 
@@ -215,7 +215,7 @@ The `confirmed_dates` table uses RLS with `user_id`. The app requires email/pass
 ### Widget Configuration
 
 - **Size**: `.systemMedium` only (`.supportedFamilies([.systemMedium])`)
-- **Kind**: `"PulseWidget"`
+- **Kind**: `"GoldfishWidget"`
 - **Display name**: "Upcoming Dates"
 - **Description**: "Shows your next upcoming confirmed dates"
 
@@ -282,17 +282,17 @@ func relevances() async -> WidgetRelevances<Void> {
 
 ### Background App Refresh
 
-**CRITICAL: Register in `pulseApp.init()`, NOT `.onAppear`.**
+**CRITICAL: Register in `goldfishApp.init()`, NOT `.onAppear`.**
 
 The system can wake the app for a background task before any view appears. Registering in `.onAppear` creates a race condition where the task handler isn't registered when the system tries to invoke it.
 
 ```swift
-// pulseApp.swift
+// goldfishApp.swift
 @main
-struct pulseApp: App {
+struct goldfishApp: App {
     init() {
         BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.dbyassmith.pulse.refresh",
+            forTaskWithIdentifier: "com.dbyassmith.goldfish.refresh",
             using: nil
         ) { task in
             handleAppRefresh(task: task as! BGAppRefreshTask)
@@ -317,7 +317,7 @@ func handleAppRefresh(task: BGAppRefreshTask) {
         do {
             let dates = try await SupabaseService.shared.fetchWidgetDates() // uses .limit(4)
             SharedDefaults.writeUpcomingDates(dates)
-            WidgetCenter.shared.reloadTimelines(ofKind: "PulseWidget")
+            WidgetCenter.shared.reloadTimelines(ofKind: "GoldfishWidget")
             task.setTaskCompleted(success: true)
         } catch {
             // Don't clear cached data on failure; widget shows stale data
@@ -332,7 +332,7 @@ Required Info.plist entry:
 ```xml
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>
-    <string>com.dbyassmith.pulse.refresh</string>
+    <string>com.dbyassmith.goldfish.refresh</string>
 </array>
 ```
 
@@ -369,7 +369,7 @@ And enable "Background fetch" in the app's Signing & Capabilities.
 
 - [x] On launch, fetch all future confirmed dates from Supabase `confirmed_dates` table
 - [x] Write the next 4 (sorted by date ascending, `.limit(4)` query) to shared UserDefaults as JSON
-- [x] Call `WidgetCenter.shared.reloadTimelines(ofKind: "PulseWidget")` after writing
+- [x] Call `WidgetCenter.shared.reloadTimelines(ofKind: "GoldfishWidget")` after writing
 - [x] Display the full list of upcoming dates in a clean SwiftUI `List`
 - [x] Each row shows title and formatted date
 - [x] Handle empty state (no upcoming dates)
@@ -390,7 +390,7 @@ And enable "Background fetch" in the app's Signing & Capabilities.
 ### Background Refresh
 
 - [x] Background App Refresh enabled in capabilities
-- [x] `BGTaskScheduler` registered in `pulseApp.init()` (NOT `.onAppear`)
+- [x] `BGTaskScheduler` registered in `goldfishApp.init()` (NOT `.onAppear`)
 - [x] `expirationHandler` set on every background task
 - [x] On background fetch: pull from Supabase (`.limit(4)`), update UserDefaults, reload widget timelines
 - [x] Schedule next background refresh after completion
@@ -401,7 +401,7 @@ And enable "Background fetch" in the app's Signing & Capabilities.
 - [x] Supabase Swift SDK added via SPM
 - [x] Shared `UpcomingDate` model accessible to both targets (with `parsedDate` computed property)
 - [ ] Supabase config (URL, anon key) stored in `Secrets.xcconfig` excluded from git
-- [x] App Group `group.com.dbyassmith.pulse` used consistently (already in entitlements)
+- [x] App Group `group.com.dbyassmith.goldfish` used consistently (already in entitlements)
 - [x] `./build.sh` compiles without errors after all changes
 
 ## Files to Create/Modify
@@ -410,22 +410,22 @@ And enable "Background fetch" in the app's Signing & Capabilities.
 
 | File | Target(s) | Purpose |
 |------|-----------|---------|
-| `ios/pulse/Shared/UpcomingDate.swift` | pulse, PulseWidget | Shared Codable data model with `parsedDate` |
-| `ios/pulse/Shared/SharedDefaults.swift` | pulse, PulseWidget | UserDefaults read/write helpers |
-| `ios/pulse/pulse/SupabaseService.swift` | pulse | Supabase client + fetch logic |
-| `ios/pulse/pulse/LoginView.swift` | pulse | Email/password login screen |
-| `ios/pulse/Secrets.xcconfig` | pulse | Supabase URL and anon key (gitignored) |
+| `ios/goldfish/Shared/UpcomingDate.swift` | goldfish, GoldfishWidget | Shared Codable data model with `parsedDate` |
+| `ios/goldfish/Shared/SharedDefaults.swift` | goldfish, GoldfishWidget | UserDefaults read/write helpers |
+| `ios/goldfish/goldfish/SupabaseService.swift` | goldfish | Supabase client + fetch logic |
+| `ios/goldfish/goldfish/LoginView.swift` | goldfish | Email/password login screen |
+| `ios/goldfish/Secrets.xcconfig` | goldfish | Supabase URL and anon key (gitignored) |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `ios/pulse/pulse/ContentView.swift` | Replace boilerplate with date list UI + Supabase fetch + sign-out button |
-| `ios/pulse/pulse/pulseApp.swift` | BGTaskScheduler in `init()`, auth state routing (LoginView vs ContentView) |
-| `ios/pulse/PulseWidget/PulseWidget.swift` | Replace boilerplate with upcoming dates widget UI + timeline with midnight entries |
-| `ios/pulse/PulseWidget/PulseWidgetBundle.swift` | Keep PulseWidget, remove unused PulseWidgetControl/LiveActivity |
-| `ios/pulse/pulse.xcodeproj/project.pbxproj` | SPM dependency, shared file memberships, background modes, xcconfig |
-| `ios/pulse/pulse/Info.plist` (or target settings) | BGTaskSchedulerPermittedIdentifiers, Supabase config vars |
+| `ios/goldfish/goldfish/ContentView.swift` | Replace boilerplate with date list UI + Supabase fetch + sign-out button |
+| `ios/goldfish/goldfish/goldfishApp.swift` | BGTaskScheduler in `init()`, auth state routing (LoginView vs ContentView) |
+| `ios/goldfish/GoldfishWidget/GoldfishWidget.swift` | Replace boilerplate with upcoming dates widget UI + timeline with midnight entries |
+| `ios/goldfish/GoldfishWidget/GoldfishWidgetBundle.swift` | Keep GoldfishWidget, remove unused GoldfishWidgetControl/LiveActivity |
+| `ios/goldfish/goldfish.xcodeproj/project.pbxproj` | SPM dependency, shared file memberships, background modes, xcconfig |
+| `ios/goldfish/goldfish/Info.plist` (or target settings) | BGTaskSchedulerPermittedIdentifiers, Supabase config vars |
 | `.gitignore` | Add `Secrets.xcconfig` |
 
 ## Edge Cases
@@ -480,8 +480,8 @@ Based on Security Sentinel review (2 HIGH, 3 MEDIUM, 2 LOW findings):
 
 - Existing Supabase integration: `cli/src/lib/supabase.ts`
 - Supabase table schema: `cli/src/commands/date.ts:70` (table: `confirmed_dates`)
-- App Group entitlements: `ios/pulse/pulse/pulse.entitlements`, `ios/pulse/PulseWidgetExtension.entitlements`
-- Build script: `ios/pulse/build.sh`
+- App Group entitlements: `ios/goldfish/goldfish/goldfish.entitlements`, `ios/goldfish/GoldfishWidgetExtension.entitlements`
+- Build script: `ios/goldfish/build.sh`
 - Institutional learning: `docs/solutions/integration-issues/supabase-cli-date-management.md`
 - [Supabase Swift SDK docs](https://supabase.com/docs/reference/swift/introduction)
 - [Supabase iOS/SwiftUI quickstart](https://supabase.com/docs/guides/getting-started/quickstarts/ios-swiftui)

@@ -15,7 +15,7 @@ DerivedData/
 xcuserdata/
 *.xccheckout
 *.xcscmblueprint
-ios/pulse/SourcePackages/
-ios/pulse/Secrets.xcconfig
+ios/goldfish/SourcePackages/
+ios/goldfish/Secrets.xcconfig
 agent/watchlist/*
 !agent/watchlist/.gitkeep

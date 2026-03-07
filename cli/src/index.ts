@@ -11,7 +11,7 @@ import { authCommand } from "./commands/auth.js";
 import { dateCommand } from "./commands/date.js";
 
 const program = new Command()
-  .name("pulse")
+  .name("goldfish")
   .version("1.0.0")
   .description("CLI for submitting confirmed dates to Supabase");
 

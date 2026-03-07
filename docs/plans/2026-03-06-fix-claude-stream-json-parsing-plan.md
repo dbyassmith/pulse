@@ -49,7 +49,7 @@ The inner `event` uses standard Claude API streaming types:
 1. **Tool use progress** — When `content_block_start` has `content_block.type === "tool_use"`, show the tool name as a progress message (e.g., "Searching the web...", "Running command...")
 2. **Streaming text** — Accumulate `text_delta` events into the result text. Show it live in the result card as it streams.
 3. **Final result** — On `message_stop`, display the accumulated text as the final result card.
-4. **Tool input details** — Accumulate `input_json_delta` for tool_use blocks to show what command is being run (e.g., "Running: pulse date add --title ...")
+4. **Tool input details** — Accumulate `input_json_delta` for tool_use blocks to show what command is being run (e.g., "Running: goldfish date add --title ...")
 
 ### Changes Required
 
@@ -114,7 +114,7 @@ No structural changes needed — it already displays text. May want to add a "st
 
 ## Acceptance Criteria
 
-- [x] Tool use events show meaningful progress messages ("Searching the web...", "Running: pulse date add ...")
+- [x] Tool use events show meaningful progress messages ("Searching the web...", "Running: goldfish date add ...")
 - [x] Assistant text streams into the result card in real-time as tokens arrive
 - [x] Final result shows the complete assistant response
 - [x] Errors from Claude subprocess still display correctly

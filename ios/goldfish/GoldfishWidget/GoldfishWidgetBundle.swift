@@ -2,8 +2,8 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct PulseWidgetBundle: WidgetBundle {
+struct GoldfishWidgetBundle: WidgetBundle {
     var body: some Widget {
-        PulseWidget()
+        GoldfishWidget()
     }
 }

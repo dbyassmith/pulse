@@ -5,6 +5,7 @@ struct UpcomingDate: Codable, Identifiable {
     let title: String
     let date: String
     let confidence: String
+    let category: String?
 
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
@@ -33,5 +34,17 @@ struct UpcomingDate: Codable, Identifiable {
         case 1: return "1 day"
         default: return "\(days) days"
         }
+    }
+
+    private static let displayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    var displayDate: String {
+        guard let parsed = parsedDate else { return date }
+        return Self.displayFormatter.string(from: parsed)
     }
 }

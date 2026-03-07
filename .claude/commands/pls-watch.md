@@ -1,4 +1,4 @@
-Add a new item to the Pulse watchlist for ongoing monitoring.
+Add a new item to the Goldfish watchlist for ongoing monitoring.
 
 **User's description:** $ARGUMENTS
 

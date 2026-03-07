@@ -21,7 +21,7 @@ function SetupWizard({ onComplete }: { onComplete: () => void }): JSX.Element {
       <div style={styles.card}>
         <h1 style={styles.title}>Setup</h1>
         <p style={styles.desc}>
-          Select the Pulse repo directory so the app can run agent commands.
+          Select the Goldfish repo directory so the app can run agent commands.
         </p>
         {error && <p style={styles.error}>{error}</p>}
         <button onClick={handleSelect} disabled={selecting} style={styles.button}>

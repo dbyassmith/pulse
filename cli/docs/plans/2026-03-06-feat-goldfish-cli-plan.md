@@ -1,20 +1,20 @@
 ---
-title: "feat: Build Pulse CLI with auth and date submission"
+title: "feat: Build Goldfish CLI with auth and date submission"
 type: feat
 status: completed
 date: 2026-03-06
 ---
 
-# Build Pulse CLI
+# Build Goldfish CLI
 
 ## Overview
 
-A TypeScript Node.js CLI called `pulse` that authenticates users against Supabase email auth and submits date records to a `confirmed_dates` table. The CLI is **write-only** — reading dates back is handled by a separate iOS app.
+A TypeScript Node.js CLI called `goldfish` that authenticates users against Supabase email auth and submits date records to a `confirmed_dates` table. The CLI is **write-only** — reading dates back is handled by a separate iOS app.
 
 Two command groups:
 
-- `pulse auth` — login, logout, whoami
-- `pulse date` — add, add-batch
+- `goldfish auth` — login, logout, whoami
+- `goldfish date` — add, add-batch
 
 ## Table Schema
 
@@ -42,36 +42,36 @@ Key details:
 
 ## Command Reference
 
-### `pulse auth login`
+### `goldfish auth login`
 
 Interactive email/password authentication.
 
 - Prompts for email (plain text input)
 - Prompts for password (masked input)
 - Calls `supabase.auth.signInWithPassword({ email, password })`
-- Persists session (access_token, refresh_token, expires_at, user metadata) to `~/.pulse/session.json` with `0600` permissions
+- Persists session (access_token, refresh_token, expires_at, user metadata) to `~/.goldfish/session.json` with `0600` permissions
 - Prints: `Logged in as <email>`
 - Exit 1 on invalid credentials with clear error message
 
-### `pulse auth logout`
+### `goldfish auth logout`
 
 - Calls `supabase.auth.signOut()` to invalidate server-side
-- Deletes `~/.pulse/session.json`
+- Deletes `~/.goldfish/session.json`
 - Prints: `Logged out`
 - If no session exists, prints: `Not logged in` (exit 0, not an error)
 
-### `pulse auth whoami`
+### `goldfish auth whoami`
 
 - Reads persisted session, refreshes if expired
 - Prints: email and user ID
-- If no session / refresh fails: `Not logged in. Run: pulse auth login` (exit 1)
+- If no session / refresh fails: `Not logged in. Run: goldfish auth login` (exit 1)
 
-### `pulse date add`
+### `goldfish date add`
 
 Add a single confirmed date.
 
 ```
-pulse date add --title "Launch day" --date 2026-03-15 --confidence high [--source "email"] [--notes "CEO confirmed"]
+goldfish date add --title "Launch day" --date 2026-03-15 --confidence high [--source "email"] [--notes "CEO confirmed"]
 ```
 
 | Flag | Required | Description |
@@ -91,12 +91,12 @@ Behavior:
 - Inserts into `confirmed_dates` via Supabase client
 - Prints: `Added: <id>` on success
 
-### `pulse date add-batch --file <path>`
+### `goldfish date add-batch --file <path>`
 
 Add multiple confirmed dates from a JSON file.
 
 ```
-pulse date add-batch --file dates.json
+goldfish date add-batch --file dates.json
 ```
 
 **JSON file format:**
@@ -137,7 +137,7 @@ Behavior:
 ### Project Structure
 
 ```
-pulse/
+goldfish/
   src/
     index.ts              # Entry point: program definition + parseAsync
     commands/
@@ -145,7 +145,7 @@ pulse/
       date.ts             # date command group (add, add-batch)
     lib/
       supabase.ts         # Supabase client factory with custom storage adapter
-      session.ts          # Session persistence (read/write/delete ~/.pulse/session.json)
+      session.ts          # Session persistence (read/write/delete ~/.goldfish/session.json)
       config.ts           # Environment variable validation
   package.json
   tsconfig.json
@@ -175,7 +175,7 @@ Validated at startup in `config.ts`. CLI exits with a clear error if either is m
 
 The Supabase JS client expects a storage adapter (localStorage-like interface) for session management. For a CLI context:
 
-1. **Custom storage adapter** in `session.ts` implementing `getItem`, `setItem`, `removeItem` backed by `~/.pulse/session.json`
+1. **Custom storage adapter** in `session.ts` implementing `getItem`, `setItem`, `removeItem` backed by `~/.goldfish/session.json`
 2. File is created with `0600` permissions (owner read/write only)
 3. The Supabase client is initialized with this custom storage, enabling its built-in token refresh to work automatically
 4. On every command that requires auth, the client is created with the persisted storage — Supabase handles reading the session and refreshing expired tokens internally
@@ -183,9 +183,9 @@ The Supabase JS client expects a storage adapter (localStorage-like interface) f
 ```
 // Pseudocode for the storage adapter
 class FileStorage {
-  getItem(key): reads from ~/.pulse/session.json[key]
-  setItem(key, value): writes to ~/.pulse/session.json[key], chmod 0600
-  removeItem(key): deletes key from ~/.pulse/session.json
+  getItem(key): reads from ~/.goldfish/session.json[key]
+  setItem(key, value): writes to ~/.goldfish/session.json[key], chmod 0600
+  removeItem(key): deletes key from ~/.goldfish/session.json
 }
 ```
 
@@ -202,21 +202,21 @@ This ensures every `date` subcommand has a valid, fresh session without duplicat
 
 - **Proactive**: Supabase JS client automatically refreshes tokens when `getSession()` is called and the access token is expired but the refresh token is valid
 - The custom storage adapter ensures refreshed tokens are written back to disk
-- If both tokens are expired, the user gets: `Session expired. Run: pulse auth login`
+- If both tokens are expired, the user gets: `Session expired. Run: goldfish auth login`
 
 ## Acceptance Criteria
 
-- [x] `pulse auth login` prompts for email/password, authenticates, persists session
-- [x] `pulse auth logout` clears local session and invalidates server-side
-- [x] `pulse auth whoami` displays current user email and ID
-- [x] `pulse date add` inserts a single record with all required fields
-- [x] `pulse date add-batch --file` inserts multiple records from JSON with group tracking
+- [x] `goldfish auth login` prompts for email/password, authenticates, persists session
+- [x] `goldfish auth logout` clears local session and invalidates server-side
+- [x] `goldfish auth whoami` displays current user email and ID
+- [x] `goldfish date add` inserts a single record with all required fields
+- [x] `goldfish date add-batch --file` inserts multiple records from JSON with group tracking
 - [x] `user_id` is never accepted as CLI input — always from session
 - [x] Token refresh works transparently (login once, commands work until refresh token expires)
 - [x] Missing `SUPABASE_URL` or `SUPABASE_ANON_KEY` produces a clear error
 - [x] Invalid date format or confidence value is rejected client-side
 - [x] Session file has `0600` permissions
-- [x] CLI can be installed globally via `npm install -g` and run as `pulse`
+- [x] CLI can be installed globally via `npm install -g` and run as `goldfish`
 
 ## Implementation Phases
 
@@ -224,7 +224,7 @@ This ensures every `date` subcommand has a valid, fresh session without duplicat
 - Initialize npm project with TypeScript, ESM, Commander.js
 - Set up `tsconfig.json`, build script, bin entry point
 - Create directory structure
-- Validate: `pulse --help` prints usage
+- Validate: `goldfish --help` prints usage
 
 ### Phase 2: Auth Commands
 - Implement `config.ts` (env var validation)

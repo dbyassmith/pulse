@@ -1,4 +1,4 @@
-Search the web to find a confirmed date for the following event, then add it to Pulse.
+Search the web to find a confirmed date for the following event, then add it to Goldfish.
 
 **Event description:** $ARGUMENTS
 
@@ -14,6 +14,7 @@ Search the web to find a confirmed date for the following event, then add it to 
      - `high` — official/first-party source (company website, official social account, press release)
      - `medium` — reputable press (major tech publications, established news outlets)
      - `low` — rumors, leaks, forums, unnamed sources
+   - The **category** — one of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday` (or a new short, lowercase, single-word category if none fit)
    - Brief **notes** summarizing what you found and why you trust (or don't trust) the source
 
 3. **Report your findings.** Before running any command, tell me:
@@ -21,7 +22,7 @@ Search the web to find a confirmed date for the following event, then add it to 
    - The date and where it came from
    - Your confidence assessment and why
 
-4. **If no confirmed date can be found**, do NOT run the `pulse date add` command. Instead, create a watchlist item for ongoing monitoring:
+4. **If no confirmed date can be found**, do NOT run the `goldfish date add` command. Instead, create a watchlist item for ongoing monitoring:
 
    a. Tell the user: "No confirmed date found yet for [event]."
 
@@ -29,6 +30,7 @@ Search the web to find a confirmed date for the following event, then add it to 
       - **title** — Clean, human-readable event name
       - **id** — Slugified title (lowercase, hyphens, no special chars)
       - **type** — One of: `one-time`, `recurring-irregular`, `recurring-predictable`, `series`, `category-watch`
+      - **category** — One of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday` (or a new short, lowercase, single-word category if none fit)
       - **search_queries** — 2-4 refined web search queries (improve on what was already tried)
       - **confirmed_when** — Plain English criteria for what counts as a confirmed date
       - **confidence_threshold** — Default to `medium`
@@ -42,6 +44,7 @@ Search the web to find a confirmed date for the following event, then add it to 
       title: "<title>"
       id: "<id>"
       type: <type>
+      category: <category>
       added: <today's date YYYY-MM-DD>
       confidence_threshold: <confidence_threshold>
       search_queries:
@@ -60,13 +63,14 @@ Search the web to find a confirmed date for the following event, then add it to 
 5. **If a date is confirmed**, run this command:
 
    ```bash
-   pulse date add \
+   goldfish date add \
      --id "<slugified-title>" \
      --title "<event title>" \
      --date "<YYYY-MM-DD>" \
      --confidence "<high|medium|low>" \
      --source "<source-url>" \
-     --notes "<brief summary of findings>"
+     --notes "<brief summary of findings>" \
+     --category "<category>"
    ```
 
    **ID rules:** Take the title, lowercase it, replace spaces and special characters with hyphens, strip trailing hyphens. Examples: "WWDC 2026" → `wwdc-2026`, "iPhone 17 Launch" → `iphone-17-launch`.

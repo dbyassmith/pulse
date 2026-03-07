@@ -26,7 +26,7 @@ Modify `.claude/commands/pls-search.md` to add a fallback step after step 4 (the
 
 ## Acceptance Criteria
 
-- [x] When `/pls-search` finds a confirmed date, behavior is unchanged (run `pulse date add`, done)
+- [x] When `/pls-search` finds a confirmed date, behavior is unchanged (run `goldfish date add`, done)
 - [x] When `/pls-search` does NOT find a confirmed date, it creates a watchlist file at `agent/watchlist/<id>.md`
 - [x] The watchlist file uses the same YAML frontmatter format as `/pls-watch` (title, id, type, added, confidence_threshold, search_queries, confirmed_when)
 - [x] The search queries in the watchlist file are informed by what was already searched (not just copied — refined based on what didn't work)
@@ -72,7 +72,7 @@ Replace step 4:
 The updated step 4 section (replacing lines 24-25 of the current file):
 
 ```markdown
-4. **If no confirmed date can be found**, do NOT run the `pulse date add` command. Instead, create a watchlist item for ongoing monitoring:
+4. **If no confirmed date can be found**, do NOT run the `goldfish date add` command. Instead, create a watchlist item for ongoing monitoring:
 
    a. Tell the user: "No confirmed date found yet for [event]."
 

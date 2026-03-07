@@ -9,7 +9,7 @@ date: 2026-03-06
 
 ## Overview
 
-Extend the existing `/pls-search` one-shot date lookup into a full agent system that monitors events over time. Users describe what they want to track in plain English; the agent maintains a watchlist, periodically searches the web for confirmed dates, resolves matches via `pulse date add`, and automatically requeues recurring events.
+Extend the existing `/pls-search` one-shot date lookup into a full agent system that monitors events over time. Users describe what they want to track in plain English; the agent maintains a watchlist, periodically searches the web for confirmed dates, resolves matches via `goldfish date add`, and automatically requeues recurring events.
 
 ## Problem Statement
 
@@ -25,7 +25,7 @@ A file-based agent system inside `agent/` using Claude Code slash commands. No n
 agent/
   watchlist/           # Active items being monitored (markdown + YAML frontmatter)
   resolved/
-    confirmed/         # Items that matched and were submitted via pulse date add
+    confirmed/         # Items that matched and were submitted via goldfish date add
   logs/                # Per-run summaries (YYYY-MM-DD-HHMMSS.md)
   CLAUDE.md            # Full workflow context for the agent
   .claude/
@@ -76,7 +76,7 @@ confirmed_when: >
 
 ## Confidence Model
 
-Three tiers matching the existing `pulse date add` confidence flag:
+Three tiers matching the existing `goldfish date add` confidence flag:
 
 | Level | Meaning | Action |
 |-------|---------|--------|
@@ -116,7 +116,7 @@ For each file in `agent/watchlist/`:
 3. Evaluate results against `confirmed_when` criteria
 4. Assign confidence level (high/medium/low)
 5. **If confidence >= confidence_threshold:**
-   - Call `pulse date add` with all flags
+   - Call `goldfish date add` with all flags
    - Move file to `agent/resolved/confirmed/<id>.md`
    - Append resolution metadata to frontmatter: `resolved_date`, `resolved_confidence`, `resolved_source`
 6. **If confidence < threshold:**
@@ -166,7 +166,7 @@ This file gives the agent full context on every run. Contents:
 3. **Watchlist file format** — complete YAML frontmatter spec with all fields
 4. **Event types** — table with descriptions and requeue behavior
 5. **Confidence model** — the three-tier system and resolution logic
-6. **pulse date add CLI reference** — exact command format, all flags, ID slugification rules, quoting rules
+6. **goldfish date add CLI reference** — exact command format, all flags, ID slugification rules, quoting rules
 7. **Requeue rules** — detailed per-type behavior
 8. **Edge cases** — what to do when searches return nothing, when multiple dates are found, when an event is cancelled
 

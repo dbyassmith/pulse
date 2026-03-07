@@ -2,6 +2,7 @@
 title: "NFL Draft 2026"
 id: "nfl-draft-2026"
 type: recurring-irregular
+category: sports
 added: 2026-03-06
 confidence_threshold: medium
 search_queries:

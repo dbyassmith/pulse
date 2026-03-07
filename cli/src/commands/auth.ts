@@ -56,7 +56,7 @@ authCommand
     } = await supabase.auth.getSession();
 
     if (error || !session) {
-      console.error("Not logged in. Run: pulse auth login");
+      console.error("Not logged in. Run: goldfish auth login");
       process.exit(1);
     }
 

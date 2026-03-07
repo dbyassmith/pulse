@@ -1,4 +1,4 @@
-Run the full Pulse agent workflow: search for confirmed dates and requeue resolved events.
+Run the full Goldfish agent workflow: search for confirmed dates and requeue resolved events.
 
 ## Context
 
@@ -14,7 +14,7 @@ Execute two passes, then write a log summary.
 
 Read all `.md` files in `agent/watchlist/`. For each file:
 
-1. **Parse the YAML frontmatter** to extract: title, id, type, confidence_threshold, search_queries, confirmed_when.
+1. **Parse the YAML frontmatter** to extract: title, id, type, category, confidence_threshold, search_queries, confirmed_when.
 
 2. **Search the web** using WebSearch for each query in `search_queries`. Try them in order. If the first query gives a strong result, you can skip remaining queries.
 
@@ -43,13 +43,14 @@ Read all `.md` files in `agent/watchlist/`. For each file:
    - Report to the user: event name, confirmed date, source URL, confidence level
    - Run the CLI command:
      ```bash
-     pulse date add \
+     goldfish date add \
        --id "<id>" \
        --title "<title>" \
        --date "<YYYY-MM-DD>" \
        --confidence "<high|medium|low>" \
        --source "<source-url>" \
-       --notes "<brief summary of what was found>"
+       --notes "<brief summary of what was found>" \
+       --category "<category>"
      ```
    - Read the current watchlist file, add resolution metadata to the frontmatter:
      ```yaml
@@ -76,7 +77,7 @@ Read all `.md` files in `agent/watchlist/`. For each file:
 
 Read all `.md` files in `agent/resolved/confirmed/`. For each file:
 
-1. **Parse the frontmatter** — get `type`, `resolved_date`, `id`, `title`, `search_queries`, `confirmed_when`.
+1. **Parse the frontmatter** — get `type`, `resolved_date`, `id`, `title`, `category`, `search_queries`, `confirmed_when`.
 
 2. **Check if the resolved date has passed** (compare to today's date).
    - If the date has NOT passed: skip this item.

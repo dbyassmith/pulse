@@ -1,5 +1,5 @@
 ---
-title: "Pulse CLI - Supabase Date Submission Tool"
+title: "Goldfish CLI - Supabase Date Submission Tool"
 category: "integration-issues"
 tags: ["cli", "supabase", "typescript", "commander", "esm", "session-management", "bulk-insert"]
 component: "cli"
@@ -9,7 +9,7 @@ problem_type: "implementation"
 technologies: ["TypeScript", "Node.js", "Commander v14", "@inquirer/prompts v8", "@supabase/supabase-js v2", "uuid v13", "dotenv v17", "ES2022", "ESM"]
 ---
 
-# Pulse CLI: Confirmed Date Submission to Supabase
+# Goldfish CLI: Confirmed Date Submission to Supabase
 
 ## Problem Statement
 
@@ -28,7 +28,7 @@ A TypeScript CLI built with **Commander.js** that authenticates against Supabase
 | Date management | `cli/src/commands/date.ts` | `add` (single insert) and `add-batch` (bulk insert from JSON file) |
 | Supabase client | `cli/src/lib/supabase.ts` | Wraps `createClient` with file-based session storage |
 | Config | `cli/src/lib/config.ts` | Reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from environment |
-| Session persistence | `cli/src/lib/session.ts` | File storage at `~/.pulse/session.json` |
+| Session persistence | `cli/src/lib/session.ts` | File storage at `~/.goldfish/session.json` |
 
 ## Key Decisions
 
@@ -58,25 +58,25 @@ Table: `confirmed_dates`
 
 ```bash
 # Authenticate interactively
-pulse auth login
+goldfish auth login
 
 # Check current session
-pulse auth whoami
+goldfish auth whoami
 
 # Add a single confirmed date
-pulse date add \
+goldfish date add \
   --title "Project Launch" \
   --date 2026-04-01 \
   --confidence high \
   --source "PM"
 
 # Batch-add from a JSON file
-pulse date add-batch \
+goldfish date add-batch \
   --file dates.json \
   --group-id "q2-milestones"
 
-# Log out (deletes ~/.pulse/session.json)
-pulse auth logout
+# Log out (deletes ~/.goldfish/session.json)
+goldfish auth logout
 ```
 
 ### JSON Batch Format
@@ -120,7 +120,7 @@ pulse auth logout
 
 ## Cross-References
 
-- **Existing plan:** `cli/docs/plans/2026-03-06-feat-pulse-cli-plan.md`
+- **Existing plan:** `cli/docs/plans/2026-03-06-feat-goldfish-cli-plan.md`
 - **Supabase Auth (signInWithPassword):** Supabase JS reference docs
 - **Supabase custom storage adapter:** `auth.storage` option on `createClient`
 - **Commander.js subcommands:** `.addCommand()` pattern for command groups

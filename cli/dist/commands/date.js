@@ -37,6 +37,7 @@ dateCommand
     .option("--source <text>", "Where this date came from")
     .option("--notes <text>", "Additional notes")
     .option("--id <text>", "Custom ID (auto-generated if omitted)")
+    .option("--category <text>", "Category (e.g. tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday)")
     .action(async (opts) => {
     const validationError = validateEntry(opts);
     if (validationError) {
@@ -53,6 +54,7 @@ dateCommand
         confidence: opts.confidence,
         source: opts.source ?? null,
         notes: opts.notes ?? null,
+        category: opts.category?.toLowerCase() ?? null,
     });
     if (error) {
         console.error(`Failed to add date: ${error.message}`);
@@ -96,6 +98,7 @@ dateCommand
         confidence: entry.confidence,
         source: entry.source ?? null,
         notes: entry.notes ?? null,
+        category: entry.category?.toLowerCase() ?? null,
         group_id: groupId,
         group_index: i,
     }));

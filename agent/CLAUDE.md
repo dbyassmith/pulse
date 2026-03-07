@@ -1,11 +1,11 @@
-# Pulse Agent System
+# Goldfish Agent System
 
-An automated date monitoring agent that watches for event date announcements, confirms them via web search, submits confirmed dates to the Pulse database, and requeues recurring events.
+An automated date monitoring agent that watches for event date announcements, confirms them via web search, submits confirmed dates to the Goldfish database, and requeues recurring events.
 
 ## Workflow Overview
 
 1. **Watch** (`/pls-watch`) — User describes an event to monitor. The agent creates a watchlist file with search queries and confirmation criteria.
-2. **Run** (`/pls-run`) — Agent searches the web for each watchlist item, resolves confirmed dates via `pulse date add`, requeues recurring events, and logs results.
+2. **Run** (`/pls-run`) — Agent searches the web for each watchlist item, resolves confirmed dates via `goldfish date add`, requeues recurring events, and logs results.
 3. **Search** (`/pls-search`) — One-shot lookup for a single event (lives at repo root `.claude/commands/pls-search.md`).
 
 ## Folder Structure
@@ -32,6 +32,7 @@ Each file is `agent/watchlist/<id>.md` with YAML frontmatter:
 title: WWDC 2026
 id: wwdc-2026
 type: recurring-irregular
+category: tech
 added: 2026-03-06
 confidence_threshold: medium
 search_queries:
@@ -59,10 +60,27 @@ confirmed_when: >
 
 | Field | Description |
 |-------|-------------|
+| `category` | Event category (see Preset Categories below) |
 | `last_checked` | Date of most recent search (YYYY-MM-DD) |
 | `notes` | Free-text context from the user |
 | `parent_id` | For requeued items, links to the resolved parent |
 | `date_estimate` | Rough expected date (for recurring-predictable) |
+
+### Preset Categories
+
+Use one of these when it fits. If an event doesn't match a preset, create a short, lowercase, single-word category (e.g., `space`, `politics`).
+
+| Category | Examples |
+|----------|----------|
+| `tech` | Apple events, developer conferences, product launches |
+| `sports` | NFL, NBA, F1, tournaments, drafts |
+| `entertainment` | Movies, TV shows, concerts, festivals |
+| `gaming` | Game releases, gaming events, E3/TGA |
+| `birthday` | Birthdays and anniversaries |
+| `travel` | Trips, flights, travel-related dates |
+| `personal` | Other personal milestones and deadlines |
+| `business` | Earnings, industry events, business deadlines |
+| `holiday` | Public holidays, observances |
 
 ### Resolved File Additions
 
@@ -87,7 +105,7 @@ When a file moves to `agent/resolved/confirmed/`, these fields are appended:
 
 ## Confidence Model
 
-Three tiers matching the `pulse date add` confidence flag:
+Three tiers matching the `goldfish date add` confidence flag:
 
 | Level | Meaning | Source Examples |
 |-------|---------|----------------|
@@ -108,16 +126,17 @@ An item resolves when the **search confidence meets or exceeds** the item's `con
 - The date is clearly speculative ("expected to be around...")
 - The event appears to be cancelled
 
-## pulse date add CLI Reference
+## goldfish date add CLI Reference
 
 ```bash
-pulse date add \
+goldfish date add \
   --id "<slugified-title>" \
   --title "<event title>" \
   --date "<YYYY-MM-DD>" \
   --confidence "<high|medium|low>" \
   --source "<source-url>" \
-  --notes "<brief summary of findings>"
+  --notes "<brief summary of findings>" \
+  --category "<category>"
 ```
 
 ### Flag Details
@@ -130,6 +149,7 @@ pulse date add \
 | `--confidence` | Required | `high`, `medium`, or `low` |
 | `--source` | Optional | URL where the date was found |
 | `--notes` | Optional | Brief context about the finding |
+| `--category` | Optional | Event category (see Preset Categories) |
 
 ### ID Slugification Rules
 
@@ -142,7 +162,7 @@ pulse date add \
 
 ### Prerequisites
 
-The CLI requires authentication. Run `pulse auth login` before first use. Session persists in `~/.pulse/session.json`.
+The CLI requires authentication. Run `goldfish auth login` before first use. Session persists in `~/.goldfish/session.json`.
 
 ## Requeue Rules (Detailed)
 

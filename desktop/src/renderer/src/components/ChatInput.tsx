@@ -55,24 +55,25 @@ const styles = {
   form: {
     display: 'flex',
     gap: 8,
-    padding: '12px 20px',
-    borderTop: '1px solid rgba(0,0,0,0.08)',
+    padding: '14px 20px 18px',
+    background: '#F0E2C8',
+    borderTop: '1px solid rgba(0,0,0,0.06)',
     flexShrink: 0
   } as React.CSSProperties,
   input: {
     flex: 1,
-    padding: '10px 12px',
-    border: '1px solid rgba(0,0,0,0.1)',
-    borderRadius: 8,
+    padding: '14px 16px',
+    border: '1px solid rgba(0,0,0,0.08)',
+    borderRadius: 12,
     fontSize: 14,
     background: '#fff',
     outline: 'none',
     fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
   } as React.CSSProperties,
   button: {
-    padding: '10px 16px',
+    padding: '14px 20px',
     border: 'none',
-    borderRadius: 8,
+    borderRadius: 12,
     fontSize: 14,
     fontWeight: 600,
     background: '#1a1a1a',

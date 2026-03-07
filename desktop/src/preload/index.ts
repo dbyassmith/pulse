@@ -10,6 +10,9 @@ const api = {
   dates: {
     list: () => ipcRenderer.invoke('dates:list')
   },
+  watchlist: {
+    list: () => ipcRenderer.invoke('watchlist:list')
+  },
   config: {
     get: () => ipcRenderer.invoke('config:get'),
     setRepoPath: (p: string) => ipcRenderer.invoke('config:setRepoPath', p),

@@ -1,4 +1,4 @@
-interface PulseAPI {
+interface GoldfishAPI {
   auth: {
     login: (email: string, password: string) => Promise<{ user?: unknown; error?: string }>
     logout: () => Promise<void>
@@ -15,6 +15,20 @@ interface PulseAPI {
         notes?: string
       }>
       error?: string
+    }>
+  }
+  watchlist: {
+    list: () => Promise<{
+      items: Array<{
+        id: string
+        title: string
+        type: string
+        category?: string
+        added?: string
+        confidence_threshold?: string
+        last_checked?: string
+        notes?: string
+      }>
     }>
   }
   config: {
@@ -34,6 +48,6 @@ interface PulseAPI {
 
 declare global {
   interface Window {
-    api: PulseAPI
+    api: GoldfishAPI
   }
 }

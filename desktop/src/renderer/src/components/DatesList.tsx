@@ -28,10 +28,14 @@ function DatesList(): JSX.Element {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  const confidenceColor = (c: string): string => {
-    if (c === 'high') return '#27ae60'
-    if (c === 'medium') return '#f39c12'
-    return '#95a5a6'
+  const daysUntil = (dateStr: string): string => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(dateStr + 'T00:00:00')
+    const diff = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    if (diff === 0) return 'Today'
+    if (diff === 1) return '1 day'
+    return `${diff} days`
   }
 
   if (error) {
@@ -46,14 +50,7 @@ function DatesList(): JSX.Element {
             <span style={styles.dateTitle}>{date.title}</span>
             <span style={styles.dateDate}>{formatDate(date.date)}</span>
           </div>
-          <span
-            style={{
-              ...styles.badge,
-              background: confidenceColor(date.confidence)
-            }}
-          >
-            {date.confidence}
-          </span>
+          <span style={styles.daysUntil}>{daysUntil(date.date)}</span>
         </div>
       ))}
       {dates.length === 0 && <p style={styles.empty}>No upcoming dates</p>}
@@ -88,13 +85,10 @@ const styles = {
     fontSize: 13,
     color: '#888'
   } as React.CSSProperties,
-  badge: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#fff',
-    padding: '2px 8px',
-    borderRadius: 10,
-    textTransform: 'capitalize' as const
+  daysUntil: {
+    fontSize: 13,
+    color: '#888',
+    flexShrink: 0
   } as React.CSSProperties,
   empty: {
     textAlign: 'center' as const,

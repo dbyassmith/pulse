@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		C0B2B7772F5BA2EC009C1BED /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0B2B7762F5BA2EC009C1BED /* WidgetKit.framework */; };
 		C0B2B7792F5BA2EC009C1BED /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0B2B7782F5BA2EC009C1BED /* SwiftUI.framework */; };
-		C0B2B7882F5BA2ED009C1BED /* PulseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0B2B7742F5BA2EC009C1BED /* PulseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C0B2B7882F5BA2ED009C1BED /* GoldfishWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0B2B7742F5BA2EC009C1BED /* GoldfishWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C0B2B9052F5BC116009C1BED /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C0B2B7B12F5BB100009C1BED /* Supabase */; };
 /* End PBXBuildFile section */
 
@@ -19,7 +19,7 @@
 			containerPortal = C0B2B75A2F5BA27F009C1BED /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C0B2B7732F5BA2EC009C1BED;
-			remoteInfo = PulseWidgetExtension;
+			remoteInfo = GoldfishWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -30,7 +30,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C0B2B7882F5BA2ED009C1BED /* PulseWidgetExtension.appex in Embed Foundation Extensions */,
+				C0B2B7882F5BA2ED009C1BED /* GoldfishWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -38,46 +38,46 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C0B2B7622F5BA27F009C1BED /* pulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C0B2B7742F5BA2EC009C1BED /* PulseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PulseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0B2B7622F5BA27F009C1BED /* goldfish.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = goldfish.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0B2B7742F5BA2EC009C1BED /* GoldfishWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GoldfishWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0B2B7762F5BA2EC009C1BED /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		C0B2B7782F5BA2EC009C1BED /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		C0B2B78F2F5BA71B009C1BED /* PulseWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PulseWidgetExtension.entitlements; sourceTree = "<group>"; };
+		C0B2B78F2F5BA71B009C1BED /* GoldfishWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GoldfishWidgetExtension.entitlements; sourceTree = "<group>"; };
 		C0B2B7C02F5BC000009C1BED /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C0B2B7892F5BA2ED009C1BED /* Exceptions for "PulseWidget" folder in "PulseWidgetExtension" target */ = {
+		C0B2B7892F5BA2ED009C1BED /* Exceptions for "GoldfishWidget" folder in "GoldfishWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = C0B2B7732F5BA2EC009C1BED /* PulseWidgetExtension */;
+			target = C0B2B7732F5BA2EC009C1BED /* GoldfishWidgetExtension */;
 		};
-		C0B2B7C12F5BC100009C1BED /* Exceptions for "pulse" folder in "pulse" target */ = {
+		C0B2B7C12F5BC100009C1BED /* Exceptions for "goldfish" folder in "goldfish" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = C0B2B7612F5BA27F009C1BED /* pulse */;
+			target = C0B2B7612F5BA27F009C1BED /* goldfish */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C0B2B7642F5BA27F009C1BED /* pulse */ = {
+		C0B2B7642F5BA27F009C1BED /* goldfish */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C0B2B7C12F5BC100009C1BED /* Exceptions for "pulse" folder in "pulse" target */,
+				C0B2B7C12F5BC100009C1BED /* Exceptions for "goldfish" folder in "goldfish" target */,
 			);
-			path = pulse;
+			path = goldfish;
 			sourceTree = "<group>";
 		};
-		C0B2B77A2F5BA2EC009C1BED /* PulseWidget */ = {
+		C0B2B77A2F5BA2EC009C1BED /* GoldfishWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C0B2B7892F5BA2ED009C1BED /* Exceptions for "PulseWidget" folder in "PulseWidgetExtension" target */,
+				C0B2B7892F5BA2ED009C1BED /* Exceptions for "GoldfishWidget" folder in "GoldfishWidgetExtension" target */,
 			);
-			path = PulseWidget;
+			path = GoldfishWidget;
 			sourceTree = "<group>";
 		};
 		C0B2B7A02F5BB000009C1BED /* Shared */ = {
@@ -112,10 +112,10 @@
 			isa = PBXGroup;
 			children = (
 				C0B2B7C02F5BC000009C1BED /* Secrets.xcconfig */,
-				C0B2B78F2F5BA71B009C1BED /* PulseWidgetExtension.entitlements */,
-				C0B2B7642F5BA27F009C1BED /* pulse */,
+				C0B2B78F2F5BA71B009C1BED /* GoldfishWidgetExtension.entitlements */,
+				C0B2B7642F5BA27F009C1BED /* goldfish */,
 				C0B2B7A02F5BB000009C1BED /* Shared */,
-				C0B2B77A2F5BA2EC009C1BED /* PulseWidget */,
+				C0B2B77A2F5BA2EC009C1BED /* GoldfishWidget */,
 				C0B2B7752F5BA2EC009C1BED /* Frameworks */,
 				C0B2B7632F5BA27F009C1BED /* Products */,
 			);
@@ -124,8 +124,8 @@
 		C0B2B7632F5BA27F009C1BED /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C0B2B7622F5BA27F009C1BED /* pulse.app */,
-				C0B2B7742F5BA2EC009C1BED /* PulseWidgetExtension.appex */,
+				C0B2B7622F5BA27F009C1BED /* goldfish.app */,
+				C0B2B7742F5BA2EC009C1BED /* GoldfishWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -142,9 +142,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C0B2B7612F5BA27F009C1BED /* pulse */ = {
+		C0B2B7612F5BA27F009C1BED /* goldfish */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C0B2B76D2F5BA280009C1BED /* Build configuration list for PBXNativeTarget "pulse" */;
+			buildConfigurationList = C0B2B76D2F5BA280009C1BED /* Build configuration list for PBXNativeTarget "goldfish" */;
 			buildPhases = (
 				C0B2B75E2F5BA27F009C1BED /* Sources */,
 				C0B2B75F2F5BA27F009C1BED /* Frameworks */,
@@ -157,20 +157,20 @@
 				C0B2B7872F5BA2ED009C1BED /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				C0B2B7642F5BA27F009C1BED /* pulse */,
+				C0B2B7642F5BA27F009C1BED /* goldfish */,
 				C0B2B7A02F5BB000009C1BED /* Shared */,
 			);
-			name = pulse;
+			name = goldfish;
 			packageProductDependencies = (
 				C0B2B7B12F5BB100009C1BED /* Supabase */,
 			);
-			productName = pulse;
-			productReference = C0B2B7622F5BA27F009C1BED /* pulse.app */;
+			productName = goldfish;
+			productReference = C0B2B7622F5BA27F009C1BED /* goldfish.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C0B2B7732F5BA2EC009C1BED /* PulseWidgetExtension */ = {
+		C0B2B7732F5BA2EC009C1BED /* GoldfishWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C0B2B78A2F5BA2ED009C1BED /* Build configuration list for PBXNativeTarget "PulseWidgetExtension" */;
+			buildConfigurationList = C0B2B78A2F5BA2ED009C1BED /* Build configuration list for PBXNativeTarget "GoldfishWidgetExtension" */;
 			buildPhases = (
 				C0B2B7702F5BA2EC009C1BED /* Sources */,
 				C0B2B7712F5BA2EC009C1BED /* Frameworks */,
@@ -181,14 +181,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C0B2B77A2F5BA2EC009C1BED /* PulseWidget */,
+				C0B2B77A2F5BA2EC009C1BED /* GoldfishWidget */,
 				C0B2B7A02F5BB000009C1BED /* Shared */,
 			);
-			name = PulseWidgetExtension;
+			name = GoldfishWidgetExtension;
 			packageProductDependencies = (
 			);
-			productName = PulseWidgetExtension;
-			productReference = C0B2B7742F5BA2EC009C1BED /* PulseWidgetExtension.appex */;
+			productName = GoldfishWidgetExtension;
+			productReference = C0B2B7742F5BA2EC009C1BED /* GoldfishWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -209,7 +209,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C0B2B75D2F5BA27F009C1BED /* Build configuration list for PBXProject "pulse" */;
+			buildConfigurationList = C0B2B75D2F5BA27F009C1BED /* Build configuration list for PBXProject "goldfish" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -226,8 +226,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C0B2B7612F5BA27F009C1BED /* pulse */,
-				C0B2B7732F5BA2EC009C1BED /* PulseWidgetExtension */,
+				C0B2B7612F5BA27F009C1BED /* goldfish */,
+				C0B2B7732F5BA2EC009C1BED /* GoldfishWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -269,7 +269,7 @@
 /* Begin PBXTargetDependency section */
 		C0B2B7872F5BA2ED009C1BED /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C0B2B7732F5BA2EC009C1BED /* PulseWidgetExtension */;
+			target = C0B2B7732F5BA2EC009C1BED /* GoldfishWidgetExtension */;
 			targetProxy = C0B2B7862F5BA2ED009C1BED /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -401,14 +401,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pulse/pulse.entitlements;
+				CODE_SIGN_ENTITLEMENTS = goldfish/goldfish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = pulse/Info.plist;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.dbyassmith.pulse.refresh;
+				INFOPLIST_FILE = goldfish/Info.plist;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.dbyassmith.goldfish.refresh;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = fetch;
@@ -420,7 +420,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.pulse;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.goldfish;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -437,14 +437,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pulse/pulse.entitlements;
+				CODE_SIGN_ENTITLEMENTS = goldfish/goldfish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = pulse/Info.plist;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.dbyassmith.pulse.refresh;
+				INFOPLIST_FILE = goldfish/Info.plist;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = com.dbyassmith.goldfish.refresh;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = fetch;
@@ -456,7 +456,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.pulse;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.goldfish;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -473,13 +473,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = PulseWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = GoldfishWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PulseWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PulseWidget;
+				INFOPLIST_FILE = GoldfishWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GoldfishWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -487,7 +487,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.pulse.PulseWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.goldfish.GoldfishWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -504,13 +504,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = PulseWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = GoldfishWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PulseWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PulseWidget;
+				INFOPLIST_FILE = GoldfishWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GoldfishWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -518,7 +518,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.pulse.PulseWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dbyassmith.goldfish.GoldfishWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -533,7 +533,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C0B2B75D2F5BA27F009C1BED /* Build configuration list for PBXProject "pulse" */ = {
+		C0B2B75D2F5BA27F009C1BED /* Build configuration list for PBXProject "goldfish" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0B2B76B2F5BA280009C1BED /* Debug */,
@@ -542,7 +542,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C0B2B76D2F5BA280009C1BED /* Build configuration list for PBXNativeTarget "pulse" */ = {
+		C0B2B76D2F5BA280009C1BED /* Build configuration list for PBXNativeTarget "goldfish" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0B2B76E2F5BA280009C1BED /* Debug */,
@@ -551,7 +551,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C0B2B78A2F5BA2ED009C1BED /* Build configuration list for PBXNativeTarget "PulseWidgetExtension" */ = {
+		C0B2B78A2F5BA2ED009C1BED /* Build configuration list for PBXNativeTarget "GoldfishWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C0B2B78B2F5BA2ED009C1BED /* Debug */,

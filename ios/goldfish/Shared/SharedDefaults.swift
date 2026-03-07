@@ -2,8 +2,20 @@ import Foundation
 import WidgetKit
 
 enum SharedDefaults {
-    private static let suiteName = "group.com.dbyassmith.pulse"
+    private static let suiteName = "group.com.dbyassmith.goldfish"
     private static let key = "upcomingDates"
+    private static let widgetDarkModeKey = "widgetDarkMode"
+    private static let widgetShowDateKey = "widgetShowDate"
+
+    static var widgetDarkMode: Bool {
+        get { UserDefaults(suiteName: suiteName)?.bool(forKey: widgetDarkModeKey) ?? false }
+        set { let d = UserDefaults(suiteName: suiteName); d?.set(newValue, forKey: widgetDarkModeKey); d?.synchronize() }
+    }
+
+    static var widgetShowDate: Bool {
+        get { UserDefaults(suiteName: suiteName)?.bool(forKey: widgetShowDateKey) ?? false }
+        set { let d = UserDefaults(suiteName: suiteName); d?.set(newValue, forKey: widgetShowDateKey); d?.synchronize() }
+    }
 
     static func read() -> [UpcomingDate] {
         guard let defaults = UserDefaults(suiteName: suiteName),

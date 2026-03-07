@@ -1,4 +1,4 @@
-Run the full Pulse agent workflow: search for confirmed dates and requeue resolved events.
+Run the full Goldfish agent workflow: search for confirmed dates and requeue resolved events.
 
 ## Context
 
@@ -43,7 +43,7 @@ Read all `.md` files in `agent/watchlist/`. For each file:
    - Report to the user: event name, confirmed date, source URL, confidence level
    - Run the CLI command:
      ```bash
-     pulse date add \
+     goldfish date add \
        --id "<id>" \
        --title "<title>" \
        --date "<YYYY-MM-DD>" \

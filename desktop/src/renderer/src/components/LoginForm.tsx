@@ -1,4 +1,46 @@
-import { useState, FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
+
+function OrangeDot(): JSX.Element {
+  const dotRef = useRef<HTMLSpanElement>(null)
+  const pos = useRef({ x: 0, y: 0 })
+  const vel = useRef({ x: (Math.random() - 0.5) * 0.3, y: (Math.random() - 0.5) * 0.3 })
+  const bounds = 14
+
+  useEffect(() => {
+    let raf: number
+    const animate = (): void => {
+      pos.current.x += vel.current.x
+      pos.current.y += vel.current.y
+      if (pos.current.x < -bounds) vel.current.x = Math.abs(vel.current.x)
+      if (pos.current.x > 0) vel.current.x = -Math.abs(vel.current.x)
+      if (pos.current.y < 0) vel.current.y = Math.abs(vel.current.y)
+      if (pos.current.y > bounds) vel.current.y *= -1
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px)`
+      }
+      raf = requestAnimationFrame(animate)
+    }
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  return (
+    <span
+      ref={dotRef}
+      style={{
+        display: 'inline-block',
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        background: '#F28C38',
+        marginRight: 6,
+        verticalAlign: 'middle',
+        position: 'relative',
+        top: -8
+      }}
+    />
+  )
+}
 
 function LoginForm({ onLogin }: { onLogin: () => void }): JSX.Element {
   const [email, setEmail] = useState('')
@@ -22,9 +64,8 @@ function LoginForm({ onLogin }: { onLogin: () => void }): JSX.Element {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Pulse</h1>
-        <p style={styles.subtitle}>Sign in to continue</p>
-        <form onSubmit={handleSubmit}>
+        <h1 style={styles.title}><OrangeDot side="left" />Goldfish</h1>
+<form onSubmit={handleSubmit}>
           <input
             type="email"
             placeholder="Email"
@@ -69,13 +110,8 @@ const styles = {
   title: {
     fontSize: 28,
     fontWeight: 700,
-    margin: '0 0 4px',
+    margin: '0 0 24px',
     color: '#1a1a1a'
-  } as React.CSSProperties,
-  subtitle: {
-    fontSize: 14,
-    color: '#888',
-    margin: '0 0 24px'
   } as React.CSSProperties,
   input: {
     display: 'block',

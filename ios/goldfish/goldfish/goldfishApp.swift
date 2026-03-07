@@ -2,13 +2,13 @@ import SwiftUI
 import BackgroundTasks
 
 @main
-struct pulseApp: App {
+struct goldfishApp: App {
     @State private var isAuthenticated = false
     @State private var isCheckingAuth = true
 
     init() {
         BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.dbyassmith.pulse.refresh",
+            forTaskWithIdentifier: "com.dbyassmith.goldfish.refresh",
             using: nil
         ) { task in
             Self.handleAppRefresh(task: task as! BGAppRefreshTask)
@@ -41,7 +41,7 @@ struct pulseApp: App {
     }
 
     nonisolated private func scheduleAppRefresh() {
-        let request = BGAppRefreshTaskRequest(identifier: "com.dbyassmith.pulse.refresh")
+        let request = BGAppRefreshTaskRequest(identifier: "com.dbyassmith.goldfish.refresh")
         request.earliestBeginDate = Calendar.current.nextDate(
             after: Date(),
             matching: DateComponents(hour: 9),
@@ -63,7 +63,7 @@ struct pulseApp: App {
                 task.setTaskCompleted(success: false)
             }
 
-            let request = BGAppRefreshTaskRequest(identifier: "com.dbyassmith.pulse.refresh")
+            let request = BGAppRefreshTaskRequest(identifier: "com.dbyassmith.goldfish.refresh")
             request.earliestBeginDate = Calendar.current.nextDate(
                 after: Date(),
                 matching: DateComponents(hour: 9),

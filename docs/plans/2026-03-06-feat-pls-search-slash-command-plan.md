@@ -7,7 +7,7 @@ date: 2026-03-06
 
 # Add pls-search slash command for web-based date lookup
 
-Create a Claude Code slash command at `.claude/commands/pls-search.md` that takes a plain English event description, searches the web for a confirmed date, and calls `pulse date add` with the result.
+Create a Claude Code slash command at `.claude/commands/pls-search.md` that takes a plain English event description, searches the web for a confirmed date, and calls `goldfish date add` with the result.
 
 ## Acceptance Criteria
 
@@ -15,7 +15,7 @@ Create a Claude Code slash command at `.claude/commands/pls-search.md` that take
 - [x] Command accepts `$ARGUMENTS` as the user's plain English event description
 - [x] Instructs Claude to use `WebSearch` to find a confirmed date for the described event
 - [x] Reports what was found: event name, date, source URL, and confidence assessment
-- [x] Calls `pulse date add` with all required flags:
+- [x] Calls `goldfish date add` with all required flags:
   - `--id` — slugified version of the title (e.g., `wwdc-2026`)
   - `--title` — human-readable event title
   - `--date` — in `YYYY-MM-DD` format
@@ -29,7 +29,7 @@ Create a Claude Code slash command at `.claude/commands/pls-search.md` that take
 ### CLI interface (from `cli/src/commands/date.ts`)
 
 ```
-pulse date add \
+goldfish date add \
   --id <text>           # Custom ID (auto-generated UUID if omitted)
   --title <text>        # Required: title of the date entry
   --date <YYYY-MM-DD>   # Required: the date value
@@ -38,7 +38,7 @@ pulse date add \
   --notes <text>        # Optional: additional notes
 ```
 
-The CLI is a Node.js app at `cli/dist/index.js` (bin: `pulse`). It requires auth via `pulse auth login` before use.
+The CLI is a Node.js app at `cli/dist/index.js` (bin: `goldfish`). It requires auth via `goldfish auth login` before use.
 
 ### Slash command structure
 
@@ -70,7 +70,7 @@ The slash command file should be a prompt template that instructs Claude to:
 2. Use `WebSearch` to find the confirmed date (try multiple queries if needed)
 3. Evaluate source authority and assign confidence
 4. Report findings to the user (event, date, source URL, confidence rationale)
-5. Run `pulse date add` via Bash with all flags populated
+5. Run `goldfish date add` via Bash with all flags populated
 6. If no date can be confirmed, tell the user and do not run the command
 
 Key behaviors to encode in the prompt:

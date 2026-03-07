@@ -13,6 +13,7 @@ interface DateEntry {
   source?: string;
   notes?: string;
   id?: string;
+  category?: string;
 }
 
 function validateEntry(entry: DateEntry, index?: number): string | null {
@@ -37,7 +38,7 @@ async function requireAuth() {
   } = await supabase.auth.getSession();
 
   if (error || !session) {
-    console.error("Not logged in. Run: pulse auth login");
+    console.error("Not logged in. Run: goldfish auth login");
     process.exit(1);
   }
 
@@ -57,6 +58,7 @@ dateCommand
   .option("--source <text>", "Where this date came from")
   .option("--notes <text>", "Additional notes")
   .option("--id <text>", "Custom ID (auto-generated if omitted)")
+  .option("--category <text>", "Category (e.g. tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday)")
   .action(async (opts) => {
     const validationError = validateEntry(opts);
     if (validationError) {
@@ -75,6 +77,7 @@ dateCommand
       confidence: opts.confidence,
       source: opts.source ?? null,
       notes: opts.notes ?? null,
+      category: opts.category?.toLowerCase() ?? null,
     });
 
     if (error) {
@@ -124,6 +127,7 @@ dateCommand
       confidence: entry.confidence,
       source: entry.source ?? null,
       notes: entry.notes ?? null,
+      category: entry.category?.toLowerCase() ?? null,
       group_id: groupId,
       group_index: i,
     }));

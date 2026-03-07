@@ -1,7 +1,7 @@
 {
-  "name": "pulse-desktop",
+  "name": "goldfish-desktop",
   "version": "0.1.0",
-  "description": "Pulse Desktop - Upcoming dates dashboard",
+  "description": "Goldfish Desktop - Upcoming dates dashboard",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -13,7 +13,8 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
-    "@supabase/supabase-js": "^2.49.4"
+    "@supabase/supabase-js": "^2.49.4",
+    "gray-matter": "^4.0.3"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -24,9 +25,9 @@
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.12",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
   }
 }

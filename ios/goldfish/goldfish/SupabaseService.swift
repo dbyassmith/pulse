@@ -32,14 +32,14 @@ final class SupabaseService {
     func signOut() async throws {
         try await client.auth.signOut()
         SharedDefaults.clear()
-        WidgetCenter.shared.reloadTimelines(ofKind: "PulseWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "GoldfishWidget")
     }
 
     func fetchAllUpcoming() async throws -> [UpcomingDate] {
         let today = Self.todayString()
         let dates: [UpcomingDate] = try await client
             .from("confirmed_dates")
-            .select("id, title, date, confidence")
+            .select("id, title, date, confidence, category")
             .gte("date", value: today)
             .order("date", ascending: true)
             .execute()
@@ -51,7 +51,7 @@ final class SupabaseService {
         let today = Self.todayString()
         let dates: [UpcomingDate] = try await client
             .from("confirmed_dates")
-            .select("id, title, date, confidence")
+            .select("id, title, date, confidence, category")
             .gte("date", value: today)
             .order("date", ascending: true)
             .limit(4)
@@ -60,10 +60,18 @@ final class SupabaseService {
         return dates
     }
 
+    func deleteDate(id: String) async throws {
+        try await client
+            .from("confirmed_dates")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+
     func refreshWidgetData() async throws {
         let dates = try await fetchWidgetDates()
         SharedDefaults.write(dates)
-        WidgetCenter.shared.reloadTimelines(ofKind: "PulseWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "GoldfishWidget")
     }
 
     private static func todayString() -> String {
