@@ -1,0 +1,21 @@
+[
+  {
+    "title": "Launch day",
+    "date": "2026-03-15",
+    "confidence": "high",
+    "source": "email",
+    "notes": "CEO confirmed"
+  },
+  {
+    "title": "Board meeting",
+    "date": "2026-03-20",
+    "confidence": "medium",
+    "source": "calendar"
+  },
+  {
+    "title": "Team offsite",
+    "date": "2026-04-01",
+    "confidence": "low",
+    "notes": "Tentative, waiting on venue"
+  }
+]
