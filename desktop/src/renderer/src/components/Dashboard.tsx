@@ -195,7 +195,7 @@ const styles = {
   } as React.CSSProperties,
   tabBar: {
     display: 'flex',
-    padding: '0 20px',
+    padding: '8px 20px 0',
     flexShrink: 0,
     WebkitAppRegion: 'no-drag'
   } as React.CSSProperties,
