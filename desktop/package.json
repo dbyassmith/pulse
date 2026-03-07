@@ -14,7 +14,8 @@
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
     "@supabase/supabase-js": "^2.49.4",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.577.0"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

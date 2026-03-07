@@ -59,11 +59,16 @@ struct GoldfishWidgetEntryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("UPCOMING")
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color(red: 0.949, green: 0.549, blue: 0.220))
+                    .frame(width: 6, height: 6)
+                Text("GOLDFISH")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+            }
 
             if entry.upcomingDates.isEmpty {
                 Spacer()
@@ -74,7 +79,13 @@ struct GoldfishWidgetEntryView: View {
                 Spacer()
             } else {
                 ForEach(entry.upcomingDates.prefix(4)) { item in
-                    HStack {
+                    HStack(spacing: 6) {
+                        if item.category != nil {
+                            Image(systemName: item.categoryIcon)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 14)
+                        }
                         Text(item.title)
                             .font(.callout)
                             .lineLimit(1)
@@ -101,13 +112,17 @@ struct GoldfishWidget: Widget {
                 GoldfishWidgetEntryView(entry: entry)
                     .environment(\.colorScheme, entry.isDarkMode ? .dark : .light)
                     .containerBackground(for: .widget) {
-                        Color(entry.isDarkMode ? .systemBackground : .secondarySystemBackground)
+                        (entry.isDarkMode
+                            ? Color(.systemBackground)
+                            : Color(red: 0.973, green: 0.929, blue: 0.851))
                             .environment(\.colorScheme, entry.isDarkMode ? .dark : .light)
                     }
             } else {
                 GoldfishWidgetEntryView(entry: entry)
                     .padding()
-                    .background(Color(entry.isDarkMode ? .systemBackground : .secondarySystemBackground))
+                    .background(entry.isDarkMode
+                        ? Color(.systemBackground)
+                        : Color(red: 0.973, green: 0.929, blue: 0.851))
                     .environment(\.colorScheme, entry.isDarkMode ? .dark : .light)
             }
         }

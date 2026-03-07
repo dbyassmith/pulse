@@ -6,6 +6,9 @@ struct UpcomingDate: Codable, Identifiable {
     let date: String
     let confidence: String
     let category: String?
+    let source: String?
+    let notes: String?
+    let created_at: String?
 
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
@@ -46,5 +49,32 @@ struct UpcomingDate: Codable, Identifiable {
     var displayDate: String {
         guard let parsed = parsedDate else { return date }
         return Self.displayFormatter.string(from: parsed)
+    }
+
+    private static let longFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMMM d, yyyy"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    var longDisplayDate: String {
+        guard let parsed = parsedDate else { return date }
+        return Self.longFormatter.string(from: parsed)
+    }
+
+    var categoryIcon: String {
+        switch category?.lowercased() {
+        case "tech": return "desktopcomputer"
+        case "sports": return "sportscourt"
+        case "entertainment": return "film"
+        case "gaming": return "gamecontroller"
+        case "birthday": return "birthday.cake"
+        case "travel": return "airplane"
+        case "personal": return "person"
+        case "business": return "briefcase"
+        case "holiday": return "star"
+        default: return "tag"
+        }
     }
 }

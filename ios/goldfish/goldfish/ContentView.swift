@@ -32,14 +32,18 @@ struct ContentView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     if let category = date.category {
-                                        Text(category.uppercased())
-                                            .font(.caption2)
-                                            .fontWeight(.medium)
-                                            .foregroundStyle(.secondary)
-                                            .padding(.horizontal, 5)
-                                            .padding(.vertical, 1)
-                                            .background(.quaternary)
-                                            .clipShape(Capsule())
+                                        HStack(spacing: 3) {
+                                            Image(systemName: date.categoryIcon)
+                                                .font(.caption2)
+                                            Text(category.uppercased())
+                                                .font(.caption2)
+                                                .fontWeight(.medium)
+                                        }
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1)
+                                        .background(.quaternary)
+                                        .clipShape(Capsule())
                                     }
                                 }
                             }
@@ -66,9 +70,15 @@ struct ContentView: View {
                 }
             }
             .background(Color(red: 0xF8/255, green: 0xED/255, blue: 0xD9/255))
-            .navigationTitle("Goldfish")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 5) {
+                        OrangeDot()
+                        Text("Goldfish")
+                            .fontWeight(.semibold)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SettingsView(onSignOut: onSignOut)
