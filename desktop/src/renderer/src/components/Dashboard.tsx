@@ -100,18 +100,20 @@ function Dashboard({ claudeAvailable, onLogout }: Props): JSX.Element {
       </div>
 
       <div style={styles.tabBar}>
-        <button
-          style={activeTab === 'upcoming' ? styles.tabActive : styles.tab}
-          onClick={() => setActiveTab('upcoming')}
-        >
-          Upcoming
-        </button>
-        <button
-          style={activeTab === 'watchlist' ? styles.tabActive : styles.tab}
-          onClick={() => setActiveTab('watchlist')}
-        >
-          Watchlist
-        </button>
+        <div style={styles.tabTrack}>
+          <button
+            style={activeTab === 'upcoming' ? styles.tabActive : styles.tab}
+            onClick={() => setActiveTab('upcoming')}
+          >
+            Upcoming
+          </button>
+          <button
+            style={activeTab === 'watchlist' ? styles.tabActive : styles.tab}
+            onClick={() => setActiveTab('watchlist')}
+          >
+            Watchlist
+          </button>
+        </div>
       </div>
 
       {activeTab === 'upcoming' ? (
@@ -193,31 +195,41 @@ const styles = {
   } as React.CSSProperties,
   tabBar: {
     display: 'flex',
-    gap: 0,
     padding: '0 20px',
-    borderBottom: '1px solid rgba(0,0,0,0.08)',
     flexShrink: 0,
     WebkitAppRegion: 'no-drag'
   } as React.CSSProperties,
+  tabTrack: {
+    display: 'flex',
+    background: 'rgba(0,0,0,0.06)',
+    borderRadius: 10,
+    padding: 3,
+    width: '100%'
+  } as React.CSSProperties,
   tab: {
+    flex: 1,
     background: 'none',
     border: 'none',
-    borderBottom: '2px solid transparent',
-    padding: '8px 16px',
+    borderRadius: 8,
+    padding: '7px 16px',
     fontSize: 13,
     fontWeight: 500,
     color: '#888',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'all 0.15s ease'
   } as React.CSSProperties,
   tabActive: {
-    background: 'none',
+    flex: 1,
+    background: '#fff',
     border: 'none',
-    borderBottom: '2px solid #3498db',
-    padding: '8px 16px',
+    borderRadius: 8,
+    padding: '7px 16px',
     fontSize: 13,
     fontWeight: 500,
     color: '#1a1a1a',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    transition: 'all 0.15s ease'
   } as React.CSSProperties
 }
 
