@@ -161,7 +161,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '16px 20px 8px',
+    padding: '16px 20px 14px',
     WebkitAppRegion: 'drag',
     flexShrink: 0,
     position: 'relative' as const
