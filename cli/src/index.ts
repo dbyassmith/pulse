@@ -9,6 +9,7 @@ config({ path: join(__dirname, "..", ".env") });
 import { Command } from "commander";
 import { authCommand } from "./commands/auth.js";
 import { dateCommand } from "./commands/date.js";
+import { watchlistCommand } from "./commands/watchlist.js";
 
 const program = new Command()
   .name("goldfish")
@@ -17,5 +18,6 @@ const program = new Command()
 
 program.addCommand(authCommand);
 program.addCommand(dateCommand);
+program.addCommand(watchlistCommand);
 
 program.parseAsync();

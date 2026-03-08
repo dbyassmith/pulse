@@ -126,7 +126,11 @@ An item resolves when the **search confidence meets or exceeds** the item's `con
 - The date is clearly speculative ("expected to be around...")
 - The event appears to be cancelled
 
-## goldfish date add CLI Reference
+## CLI Reference
+
+The CLI requires authentication. Run `goldfish auth login` before first use. Session persists in `~/.goldfish/session.json`.
+
+### goldfish date add
 
 ```bash
 goldfish date add \
@@ -139,8 +143,6 @@ goldfish date add \
   --category "<category>"
 ```
 
-### Flag Details
-
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--id` | Optional | URL-safe slug. Auto-generated UUID if omitted. |
@@ -151,6 +153,44 @@ goldfish date add \
 | `--notes` | Optional | Brief context about the finding |
 | `--category` | Optional | Event category (see Preset Categories) |
 
+### goldfish watchlist sync
+
+Syncs watchlist markdown files to the Supabase database so desktop/iOS apps can display them.
+
+```bash
+# Sync a single file
+goldfish watchlist sync file agent/watchlist/<id>.md
+
+# Sync all files in a directory (safety net for drift)
+goldfish watchlist sync dir agent/watchlist/
+```
+
+**You MUST run sync after every file write or edit to a watchlist item.** This keeps the database in sync with the filesystem.
+
+### goldfish watchlist resolve
+
+Resolves a watchlist item by adding a confirmed date and marking the item as resolved.
+
+```bash
+goldfish watchlist resolve \
+  --id "<watchlist-item-id>" \
+  --date "<YYYY-MM-DD>" \
+  --confidence "<high|medium|low>" \
+  --source "<source-url>" \
+  --notes "<brief summary>" \
+  --category "<category>"
+```
+
+This replaces calling `goldfish date add` directly for resolved watchlist items. It inserts into `confirmed_dates` and updates the watchlist item's status in one command.
+
+### goldfish watchlist remove
+
+Soft-deletes a watchlist item from the database.
+
+```bash
+goldfish watchlist remove --id "<watchlist-item-id>"
+```
+
 ### ID Slugification Rules
 
 - Lowercase the title
@@ -159,10 +199,6 @@ goldfish date add \
 - Examples: "WWDC 2026" -> `wwdc-2026`, "iPhone 17 Launch" -> `iphone-17-launch`
 
 **Quote all flag values that contain spaces.**
-
-### Prerequisites
-
-The CLI requires authentication. Run `goldfish auth login` before first use. Session persists in `~/.goldfish/session.json`.
 
 ## Requeue Rules (Detailed)
 

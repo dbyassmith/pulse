@@ -1,7 +1,7 @@
 ---
 title: "feat: Sync watchlist items to Supabase via CLI"
 type: feat
-status: active
+status: completed
 date: 2026-03-08
 ---
 
@@ -186,17 +186,17 @@ The `sync --file` command must validate frontmatter before upserting to Supabase
 
 ## Acceptance Criteria
 
-- [ ] `watchlist_items` table created in Supabase with RLS policies
-- [ ] `goldfish watchlist sync --file <path>` reads a markdown file and upserts into database
-- [ ] `goldfish watchlist sync --dir <path>` scans directory and upserts all items
-- [ ] `goldfish watchlist resolve --id <id> --date <date> --confidence <level>` updates watchlist status and inserts confirmed date
-- [ ] `goldfish watchlist remove --id <id>` soft-deletes a watchlist item
-- [ ] Desktop `watchlist:list` IPC handler queries Supabase instead of filesystem
-- [ ] `/pls-watch` agent command calls `goldfish watchlist sync` after writing the file
-- [ ] `/pls-run` agent command calls `goldfish watchlist resolve` instead of `goldfish date add` for resolved items
-- [ ] `/pls-search` agent command calls `goldfish watchlist sync` when creating a watchlist fallback
-- [ ] `sync --file` validates frontmatter fields and sets `user_id` from session
-- [ ] Existing 2 watchlist items are backfilled into database (one-time sync)
+- [x] `watchlist_items` table created in Supabase with RLS policies
+- [x] `goldfish watchlist sync --file <path>` reads a markdown file and upserts into database
+- [x] `goldfish watchlist sync --dir <path>` scans directory and upserts all items
+- [x] `goldfish watchlist resolve --id <id> --date <date> --confidence <level>` updates watchlist status and inserts confirmed date
+- [x] `goldfish watchlist remove --id <id>` soft-deletes a watchlist item
+- [x] Desktop `watchlist:list` IPC handler queries Supabase instead of filesystem
+- [x] `/pls-watch` agent command calls `goldfish watchlist sync` after writing the file
+- [x] `/pls-run` agent command calls `goldfish watchlist resolve` instead of `goldfish date add` for resolved items
+- [x] `/pls-search` agent command calls `goldfish watchlist sync` when creating a watchlist fallback
+- [x] `sync --file` validates frontmatter fields and sets `user_id` from session
+- [ ] Existing 2 watchlist items are backfilled into database (one-time sync via `goldfish watchlist sync dir agent/watchlist/`)
 
 ## Success Metrics
 

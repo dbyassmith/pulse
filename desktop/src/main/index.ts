@@ -6,7 +6,6 @@ import { spawn, ChildProcess } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import matter from 'gray-matter'
 
 const SUPABASE_URL = 'https://onlwcorsbauphzzmceru.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_jEKJ1zPdE8XZE_5RVYtGUg_N2Wy6phb'
@@ -324,37 +323,14 @@ function setupIPC(): void {
 
   // Watchlist
   ipcMain.handle('watchlist:list', async () => {
-    const config = readConfig()
-    if (!config.repoPath) return { items: [] }
-    const watchlistDir = path.join(config.repoPath, 'agent', 'watchlist')
-    try {
-      if (!fs.existsSync(watchlistDir)) return { items: [] }
-      const files = fs.readdirSync(watchlistDir).filter((f) => f.endsWith('.md'))
-      const items = []
-      for (const file of files) {
-        try {
-          const content = fs.readFileSync(path.join(watchlistDir, file), 'utf-8')
-          const { data } = matter(content)
-          if (data.title && data.id) {
-            items.push({
-              id: data.id,
-              title: data.title,
-              type: data.type || 'one-time',
-              category: data.category,
-              added: data.added,
-              confidence_threshold: data.confidence_threshold,
-              last_checked: data.last_checked,
-              notes: data.notes
-            })
-          }
-        } catch {
-          // skip malformed files
-        }
-      }
-      return { items }
-    } catch {
-      return { items: [] }
-    }
+    const sb = getSupabase()
+    const { data, error } = await sb
+      .from('watchlist_items')
+      .select('*')
+      .eq('status', 'active')
+      .order('added', { ascending: false })
+    if (error) return { items: [] }
+    return { items: data }
   })
 
   // Config
