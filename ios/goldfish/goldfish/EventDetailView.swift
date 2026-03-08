@@ -13,7 +13,7 @@ struct EventDetailView: View {
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
 
-    private let bgColor = Color(red: 0xF8/255, green: 0xED/255, blue: 0xD9/255)
+    private let bgColor = Color("AppBackground")
 
     private static let categories = [
         "tech", "sports", "entertainment", "gaming",
@@ -77,18 +77,22 @@ struct EventDetailView: View {
                 } else {
                     DetailRow(label: "Date", value: date.longDisplayDate)
                     DetailRow(label: "Countdown", value: date.daysRemainingText)
-                    if let category = date.category {
-                        HStack(spacing: 6) {
-                            Text("Category")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
+                    HStack(spacing: 6) {
+                        Text("Category")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if let category = date.category {
                             HStack(spacing: 3) {
                                 Image(systemName: date.categoryIcon)
                                     .font(.caption2)
                                 Text(category.capitalized)
                                     .font(.body)
                             }
+                        } else {
+                            Text("None")
+                                .font(.body)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     DetailRow(label: "Confidence", value: date.confidence.capitalized)

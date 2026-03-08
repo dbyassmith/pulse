@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-const SESSION_DIR = path.join(os.homedir(), ".pulse");
+const SESSION_DIR = path.join(os.homedir(), ".goldfish");
 const SESSION_FILE = path.join(SESSION_DIR, "session.json");
 function ensureDir() {
     if (!fs.existsSync(SESSION_DIR)) {

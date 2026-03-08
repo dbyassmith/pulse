@@ -85,6 +85,11 @@ struct GoldfishWidgetEntryView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .frame(width: 14)
+                        } else {
+                            Circle()
+                                .fill(Color.gray)
+                                .frame(width: 6, height: 6)
+                                .frame(width: 14)
                         }
                         Text(item.title)
                             .font(.callout)

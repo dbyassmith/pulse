@@ -7,7 +7,7 @@ struct SettingsView: View {
     @State private var widgetDarkMode = SharedDefaults.widgetDarkMode
     @State private var widgetShowDate = SharedDefaults.widgetShowDate
 
-    private let bgColor = Color(red: 0xF8/255, green: 0xED/255, blue: 0xD9/255)
+    private let bgColor = Color("AppBackground")
 
     var body: some View {
         List {
@@ -40,7 +40,7 @@ struct SettingsView: View {
             .listRowBackground(bgColor)
         }
         .scrollContentBackground(.hidden)
-        .background(Color(red: 0xF8/255, green: 0xED/255, blue: 0xD9/255))
+        .background(Color("AppBackground"))
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
     }

@@ -39,7 +39,7 @@ final class SupabaseService {
         let today = Self.todayString()
         let dates: [UpcomingDate] = try await client
             .from("confirmed_dates")
-            .select("id, title, date, confidence, category, source, notes, created_at")
+            .select("id, title, date, confidence, category, source, notes")
             .gte("date", value: today)
             .order("date", ascending: true)
             .execute()

@@ -1,6 +1,6 @@
 import Foundation
 
-struct UpcomingDate: Codable, Identifiable {
+struct UpcomingDate: Codable, Identifiable, Hashable {
     let id: String
     var title: String
     var date: String
@@ -64,6 +64,10 @@ struct UpcomingDate: Codable, Identifiable {
     }
 
     var categoryIcon: String {
+        Self.iconForCategory(category)
+    }
+
+    static func iconForCategory(_ category: String?) -> String {
         switch category?.lowercased() {
         case "tech": return "desktopcomputer"
         case "sports": return "sportscourt"

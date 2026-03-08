@@ -403,8 +403,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = goldfish/goldfish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = JGDAH2N7U3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = goldfish/Info.plist;
@@ -439,8 +439,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = goldfish/goldfish.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = JGDAH2N7U3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = goldfish/Info.plist;
@@ -476,7 +476,7 @@
 				CODE_SIGN_ENTITLEMENTS = GoldfishWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = JGDAH2N7U3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GoldfishWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldfishWidget;
@@ -507,7 +507,7 @@
 				CODE_SIGN_ENTITLEMENTS = GoldfishWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = JGDAH2N7U3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GoldfishWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldfishWidget;

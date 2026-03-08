@@ -22,7 +22,7 @@ async function requireAuth() {
     const supabase = getSupabaseClient();
     const { data: { session }, error, } = await supabase.auth.getSession();
     if (error || !session) {
-        console.error("Not logged in. Run: pulse auth login");
+        console.error("Not logged in. Run: goldfish auth login");
         process.exit(1);
     }
     return { supabase, userId: session.user.id };

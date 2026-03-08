@@ -12,8 +12,13 @@ struct LoginView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Text("Goldfish")
-                .font(.largeTitle.bold())
+            HStack(spacing: 6) {
+                OrangeDot()
+                Text("Goldfish")
+                    .font(.title2.bold())
+            }
+
+            Spacer().frame(height: 16)
 
             VStack(spacing: 16) {
                 TextField("Email", text: $email)
@@ -39,23 +44,33 @@ struct LoginView: View {
             }
 
             Button {
-                Task { await signIn() }
+                guard !isLoading else { return }
+                if email.isEmpty {
+                    errorMessage = "Please enter your email."
+                } else if password.isEmpty {
+                    errorMessage = "Please enter your password."
+                } else {
+                    Task { await signIn() }
+                }
             } label: {
                 if isLoading {
                     ProgressView()
+                        .tint(.white)
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Sign In")
+                    Text("Login")
                         .frame(maxWidth: .infinity)
                 }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(email.isEmpty || password.isEmpty || isLoading)
 
             Spacer()
         }
         .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color("AppBackground"))
+        .ignoresSafeArea()
     }
 
     private func signIn() async {
