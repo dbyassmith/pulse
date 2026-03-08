@@ -84,6 +84,17 @@ final class SupabaseService {
             .execute()
     }
 
+    func fetchWatchlistItems() async throws -> [WatchlistItem] {
+        let items: [WatchlistItem] = try await client
+            .from("watchlist_items")
+            .select("id, title, type, category, status, notes, added")
+            .eq("status", value: "active")
+            .order("added", ascending: false)
+            .execute()
+            .value
+        return items
+    }
+
     func deleteDate(id: String) async throws {
         try await client
             .from("confirmed_dates")

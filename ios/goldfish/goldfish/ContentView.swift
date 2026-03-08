@@ -2,6 +2,7 @@ import SwiftUI
 import WidgetKit
 
 struct ContentView: View {
+    @State private var selectedTab = 0
     @State private var dates: [UpcomingDate] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -22,6 +23,23 @@ struct ContentView: View {
     }
 
     var body: some View {
+        TabView(selection: $selectedTab) {
+            upcomingTab
+                .tabItem {
+                    Label("Upcoming", systemImage: "calendar")
+                }
+                .tag(0)
+
+            watchlistTab
+                .tabItem {
+                    Label("Watchlist", systemImage: "eye")
+                }
+                .tag(1)
+        }
+        .tint(.orange)
+    }
+
+    private var upcomingTab: some View {
         NavigationStack {
             mainContent
             .background(Color("AppBackground"))
@@ -78,6 +96,29 @@ struct ContentView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred.")
             }
+        }
+    }
+
+    private var watchlistTab: some View {
+        NavigationStack {
+            WatchlistView()
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 5) {
+                            OrangeDot()
+                            Text("Watchlist")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            SettingsView(onSignOut: onSignOut)
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
         }
     }
 
