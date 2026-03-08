@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var showErrorAlert = false
     @State private var selectedCategory: String?
     @State private var selectedDate: UpcomingDate?
+    @State private var showAddEvent = false
     var onSignOut: () -> Void
 
     private var availableCategories: [String] {
@@ -23,7 +24,10 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            mainContent
+            ZStack(alignment: .bottomTrailing) {
+                mainContent
+                fab
+            }
             .background(Color("AppBackground"))
             .navigationDestination(item: $selectedDate) { date in
                 EventDetailView(date: date, onDelete: {
@@ -78,7 +82,28 @@ struct ContentView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred.")
             }
+            .sheet(isPresented: $showAddEvent) {
+                AddEventView { newDate in
+                    Task { await loadDates() }
+                }
+            }
         }
+    }
+
+    private var fab: some View {
+        Button {
+            showAddEvent = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.accentColor)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 24)
     }
 
     private func deleteDate(_ date: UpcomingDate) async {

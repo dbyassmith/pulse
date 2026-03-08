@@ -84,6 +84,29 @@ final class SupabaseService {
             .execute()
     }
 
+    func createDate(_ date: UpcomingDate) async throws {
+        struct DateInsert: Encodable {
+            let title: String
+            let date: String
+            let confidence: String
+            let category: String?
+            let source: String?
+            let notes: String?
+        }
+        let payload = DateInsert(
+            title: date.title,
+            date: date.date,
+            confidence: date.confidence,
+            category: date.category,
+            source: date.source,
+            notes: date.notes
+        )
+        try await client
+            .from("confirmed_dates")
+            .insert(payload)
+            .execute()
+    }
+
     func deleteDate(id: String) async throws {
         try await client
             .from("confirmed_dates")
