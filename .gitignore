@@ -19,3 +19,6 @@ ios/goldfish/SourcePackages/
 ios/goldfish/Secrets.xcconfig
 agent/watchlist/*
 !agent/watchlist/.gitkeep
+backend/.env
+backend/node_modules/
+backend/dist/

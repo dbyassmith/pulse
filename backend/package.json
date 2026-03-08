@@ -1,0 +1,24 @@
+{
+  "name": "goldfish-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Date search service using Brave Answers API and Claude extraction",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "dotenv": "^17.3.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
