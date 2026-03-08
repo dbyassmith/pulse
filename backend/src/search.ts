@@ -50,7 +50,7 @@ ${citationSummary}`;
   const client = new Anthropic({ apiKey: anthropicApiKey });
 
   const message = await client.messages.parse({
-    model: "claude-sonnet-4-5-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 1024,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
