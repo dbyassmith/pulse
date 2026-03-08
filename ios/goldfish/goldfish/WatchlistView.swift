@@ -31,8 +31,8 @@ struct WatchlistView: View {
             }
         }
         .background(Color("AppBackground"))
-        .task {
-            await loadItems()
+        .onAppear {
+            Task { await loadItems() }
         }
         .refreshable {
             await loadItems()

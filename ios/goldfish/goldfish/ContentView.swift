@@ -35,6 +35,12 @@ struct ContentView: View {
                     Label("Watchlist", systemImage: "eye")
                 }
                 .tag(1)
+
+            chatTab
+                .tabItem {
+                    Label("Chat", systemImage: "bubble.left.and.bubble.right")
+                }
+                .tag(2)
         }
         .tint(.orange)
     }
@@ -72,8 +78,8 @@ struct ContentView: View {
                     }
                 }
             }
-            .task {
-                await loadDates()
+            .onAppear {
+                Task { await loadDates() }
             }
             .refreshable {
                 await loadDates()
@@ -108,6 +114,29 @@ struct ContentView: View {
                         HStack(spacing: 5) {
                             OrangeDot()
                             Text("Watchlist")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            SettingsView(onSignOut: onSignOut)
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    }
+                }
+        }
+    }
+
+    private var chatTab: some View {
+        NavigationStack {
+            ChatView()
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 5) {
+                            OrangeDot()
+                            Text("Chat")
                                 .fontWeight(.semibold)
                         }
                     }
