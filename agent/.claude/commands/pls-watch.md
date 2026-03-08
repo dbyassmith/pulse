@@ -63,8 +63,12 @@ If the user provided additional context worth preserving, add a `notes:` field.
 
 For `recurring-predictable` events, add a `date_estimate:` field with the rough expected timing.
 
-### Step 4: Confirm creation
+### Step 4: Sync to database
 
-After writing the file, confirm:
+You MUST immediately run `goldfish watchlist sync --file agent/watchlist/<id>.md` after writing the file. Do not proceed until sync succeeds. If sync fails, retry once, then report the failure.
+
+### Step 5: Confirm creation
+
+After writing and syncing the file, confirm:
 - What was created and where (`agent/watchlist/<id>.md`)
 - Remind the user they can run `/pls-run` to search for it now, or it will be picked up on the next run

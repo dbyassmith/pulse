@@ -66,6 +66,7 @@ Read all `.md` files in `agent/watchlist/`. For each file:
    - Log what was found (or "no results") — this goes into the run summary
    - Leave the file in `agent/watchlist/`
    - Optionally update `last_checked` in the file's frontmatter to today's date
+   - If you updated `last_checked`, you MUST immediately run `goldfish watchlist sync --file agent/watchlist/<id>.md` to sync the updated frontmatter to the database
 
 7. **If search fails** (network error, no results at all):
    - Log the error
@@ -95,16 +96,19 @@ Read all `.md` files in `agent/resolved/confirmed/`. For each file:
    - Set `added` to today's date
    - Remove resolution metadata (`resolved_date`, `resolved_on`, `resolved_confidence`, `resolved_source`)
    - Write the new file to `agent/watchlist/<new-id>.md`
+   - You MUST immediately run `goldfish watchlist sync --file agent/watchlist/<new-id>.md` after writing the requeued file
 
    **recurring-predictable:**
    - Same as recurring-irregular
    - Also include `date_estimate` based on the known pattern
+   - You MUST immediately run `goldfish watchlist sync --file agent/watchlist/<new-id>.md` after writing the requeued file
 
    **series:**
    - Determine the next event in the series
    - Create a new watchlist entry with updated title, id, and search queries
    - Set `parent_id` to the current item's `id`
    - Write to `agent/watchlist/<new-id>.md`
+   - You MUST immediately run `goldfish watchlist sync --file agent/watchlist/<new-id>.md` after writing the requeued file
 
    **category-watch:** Skip — these are requeued during Pass 1 at resolution time, not here.
 
@@ -133,6 +137,12 @@ After both passes, write a summary to `agent/logs/<YYYY-MM-DD-HHMMSS>.md` using 
 
 If the watchlist was empty, write: "No items in watchlist. Nothing to search."
 If resolved folder was empty or no dates passed, write: "No items to requeue."
+
+---
+
+### Final Sync Sweep
+
+As a final safety net, run `goldfish watchlist sync --dir agent/watchlist/` to ensure all items are synced to the database. This catches any files that may have been written or updated without an individual sync call.
 
 ---
 

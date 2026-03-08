@@ -56,7 +56,9 @@ Search the web to find a confirmed date for the following event, then add it to 
       ---
       ```
 
-   e. Confirm to the user:
+   e. You MUST immediately run `goldfish watchlist sync --file agent/watchlist/<id>.md` after writing the watchlist file. Do not proceed until sync succeeds. If sync fails, retry once, then report the failure.
+
+   f. Confirm to the user:
       - What watchlist item was created and where
       - That `/pls-run` will automatically check for this date on future runs
 
