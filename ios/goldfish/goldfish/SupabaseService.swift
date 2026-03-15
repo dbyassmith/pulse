@@ -95,6 +95,34 @@ final class SupabaseService {
         return items
     }
 
+    func updateWatchlistItem(_ item: WatchlistItem) async throws {
+        struct ItemUpdate: Encodable {
+            let title: String
+            let type: String
+            let category: String?
+            let notes: String?
+        }
+        let payload = ItemUpdate(
+            title: item.title,
+            type: item.type,
+            category: item.category,
+            notes: item.notes
+        )
+        try await client
+            .from("watchlist_items")
+            .update(payload)
+            .eq("id", value: item.id)
+            .execute()
+    }
+
+    func deleteWatchlistItem(id: String) async throws {
+        try await client
+            .from("watchlist_items")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+
     func deleteDate(id: String) async throws {
         try await client
             .from("confirmed_dates")

@@ -10,7 +10,11 @@ struct ContentView: View {
     @State private var showDeleteAlert = false
     @State private var showErrorAlert = false
     @State private var selectedCategory: String?
+    @State private var selectedWatchlistCategory: String?
+    @State private var availableWatchlistCategories: [String] = []
     @State private var selectedDate: UpcomingDate?
+    @State private var showChat = false
+    @State private var chatID = UUID()
     var onSignOut: () -> Void
 
     private var availableCategories: [String] {
@@ -23,31 +27,11 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            upcomingTab
-                .tabItem {
-                    Label("Upcoming", systemImage: "calendar")
-                }
-                .tag(0)
-
-            watchlistTab
-                .tabItem {
-                    Label("Watchlist", systemImage: "eye")
-                }
-                .tag(1)
-
-            chatTab
-                .tabItem {
-                    Label("Chat", systemImage: "bubble.left.and.bubble.right")
-                }
-                .tag(2)
-        }
-        .tint(.orange)
-    }
-
-    private var upcomingTab: some View {
         NavigationStack {
-            mainContent
+            VStack(spacing: 0) {
+                tabPicker
+                tabContent
+            }
             .background(Color("AppBackground"))
             .navigationDestination(item: $selectedDate) { date in
                 EventDetailView(date: date, onDelete: {
@@ -62,7 +46,13 @@ struct ContentView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { filterMenu }
+                ToolbarItem(placement: .topBarLeading) {
+                    if selectedTab == 0 {
+                        filterMenu
+                    } else if selectedTab == 1 {
+                        watchlistFilterMenu
+                    }
+                }
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 5) {
                         OrangeDot()
@@ -80,9 +70,6 @@ struct ContentView: View {
             }
             .onAppear {
                 Task { await loadDates() }
-            }
-            .refreshable {
-                await loadDates()
             }
             .confirmationDialog(
                 "Delete \"\(dateToDelete?.title ?? "")\"?",
@@ -102,37 +89,64 @@ struct ContentView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred.")
             }
+            .overlay(alignment: .bottomTrailing) {
+                chatFAB
+            }
+            .sheet(isPresented: $showChat) {
+                chatSheet
+            }
         }
     }
 
-    private var watchlistTab: some View {
-        NavigationStack {
-            WatchlistView()
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        HStack(spacing: 5) {
-                            OrangeDot()
-                            Text("Watchlist")
-                                .fontWeight(.semibold)
-                        }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        NavigationLink {
-                            SettingsView(onSignOut: onSignOut)
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                    }
-                }
+    private var tabPicker: some View {
+        Picker("Tab", selection: $selectedTab) {
+            Text("Upcoming").tag(0)
+            Text("Watchlist").tag(1)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var tabContent: some View {
+        ZStack {
+            upcomingContent
+                .opacity(selectedTab == 0 ? 1 : 0)
+            WatchlistView(
+                selectedCategory: selectedWatchlistCategory,
+                onCategoriesChanged: { availableWatchlistCategories = $0 }
+            )
+                .opacity(selectedTab == 1 ? 1 : 0)
         }
     }
 
-    private var chatTab: some View {
+    private var chatFAB: some View {
+        Button {
+            showChat = true
+        } label: {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.orange)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 20)
+    }
+
+    private var chatSheet: some View {
         NavigationStack {
             ChatView()
+                .id(chatID)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Done") {
+                            showChat = false
+                        }
+                    }
                     ToolbarItem(placement: .principal) {
                         HStack(spacing: 5) {
                             OrangeDot()
@@ -141,10 +155,10 @@ struct ContentView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        NavigationLink {
-                            SettingsView(onSignOut: onSignOut)
+                        Button {
+                            chatID = UUID()
                         } label: {
-                            Image(systemName: "gearshape")
+                            Image(systemName: "square.and.pencil")
                         }
                     }
                 }
@@ -165,10 +179,43 @@ struct ContentView: View {
         }
     }
 
+    private var groupedDates: [(key: String, dates: [UpcomingDate])] {
+        let cal = Calendar.current
+        let now = Date()
+        let cutoff = cal.date(byAdding: .month, value: 12, to: cal.startOfDay(for: now))!
+
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "MMMM yyyy"
+        monthFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var sections: [(key: String, dates: [UpcomingDate])] = []
+        var sectionMap: [String: Int] = [:]
+        let futureKey = "Future"
+
+        for date in filteredDates {
+            let sectionKey: String
+            if let parsed = date.parsedDate, parsed < cutoff {
+                sectionKey = monthFormatter.string(from: parsed)
+            } else {
+                sectionKey = futureKey
+            }
+
+            if let idx = sectionMap[sectionKey] {
+                sections[idx].dates.append(date)
+            } else {
+                sectionMap[sectionKey] = sections.count
+                sections.append((key: sectionKey, dates: [date]))
+            }
+        }
+
+        return sections
+    }
+
     @ViewBuilder
-    private var mainContent: some View {
+    private var upcomingContent: some View {
         if isLoading {
             ProgressView()
+                .frame(maxHeight: .infinity)
         } else if filteredDates.isEmpty {
             ContentUnavailableView(
                 selectedCategory != nil ? "No \(selectedCategory!.capitalized) Events" : "No Upcoming Dates",
@@ -176,26 +223,41 @@ struct ContentView: View {
                 description: Text(selectedCategory != nil ? "No events match this filter." : "Confirmed dates will appear here.")
             )
         } else {
-            List(filteredDates) { date in
-                dateRow(date)
-                .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
-                .listRowBackground(Color("AppBackground"))
-                .listRowSeparatorTint(Color(UIColor.separator))
-                .alignmentGuide(.listRowSeparatorLeading) { _ in -20 }
-                .alignmentGuide(.listRowSeparatorTrailing) { d in d.width + 20 }
-                .listRowSeparator(.hidden, edges: date.id == dates.first?.id ? .top : [])
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button {
-                        dateToDelete = date
-                        showDeleteAlert = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+            List {
+                ForEach(groupedDates, id: \.key) { section in
+                    Section {
+                        ForEach(section.dates) { date in
+                            dateRow(date)
+                            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
+                            .listRowBackground(Color("AppBackground"))
+                            .listRowSeparatorTint(Color(UIColor.separator))
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in -20 }
+                            .alignmentGuide(.listRowSeparatorTrailing) { d in d.width + 20 }
+                            .listRowSeparator(.hidden, edges: date.id == section.dates.last?.id ? .bottom : [])
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    dateToDelete = date
+                                    showDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                .tint(.red)
+                            }
+                        }
+                    } header: {
+                        Text(section.key.uppercased())
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 4, trailing: 20))
                     }
-                    .tint(.red)
                 }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .refreshable {
+                await loadDates()
+            }
         }
     }
 
@@ -226,6 +288,36 @@ struct ContentView: View {
             }
         } label: {
             Image(systemName: selectedCategory != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+        }
+    }
+
+    private var watchlistFilterMenu: some View {
+        Menu {
+            Button {
+                selectedWatchlistCategory = nil
+            } label: {
+                HStack {
+                    Text("All")
+                    if selectedWatchlistCategory == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+            ForEach(availableWatchlistCategories, id: \.self) { cat in
+                Button {
+                    selectedWatchlistCategory = cat
+                } label: {
+                    HStack {
+                        Image(systemName: UpcomingDate.iconForCategory(cat))
+                        Text(cat.capitalized)
+                        if selectedWatchlistCategory?.lowercased() == cat.lowercased() {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: selectedWatchlistCategory != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
         }
     }
 

@@ -9,6 +9,25 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+app.get("/health", async (_req, res) => {
+  try {
+    const { supabaseUrl, supabaseAnonKey } = getConfig();
+    // Test direct fetch to Supabase auth endpoint
+    const response = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseAnonKey },
+    });
+    const body = await response.text();
+    res.json({
+      status: "ok",
+      supabaseReachable: response.ok,
+      supabaseStatus: response.status,
+      supabaseBody: body.slice(0, 200),
+    });
+  } catch (err) {
+    res.json({ status: "error", error: String(err) });
+  }
+});
+
 app.post("/chat", async (req, res) => {
   // Extract auth token
   const authHeader = req.headers.authorization;
@@ -20,15 +39,22 @@ app.post("/chat", async (req, res) => {
   const accessToken = authHeader.slice(7);
 
   // Create authenticated Supabase client
+  const { supabaseUrl, supabaseAnonKey } = getConfig();
+  console.log("Supabase config:", {
+    url: supabaseUrl,
+    keyLength: supabaseAnonKey.length,
+    keyValue: supabaseAnonKey,
+  });
   const supabase = createAuthenticatedClient(accessToken);
 
-  // Validate the token
+  // Validate the token by passing it directly to getUser
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken);
 
   if (authError || !user) {
+    console.error("Auth failed:", { authError, hasUser: !!user, tokenPrefix: accessToken.slice(0, 20) + "..." });
     res.status(401).json({ error: "Invalid or expired token" });
     return;
   }

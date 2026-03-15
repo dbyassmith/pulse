@@ -1,14 +1,14 @@
 import SwiftUI
 
-struct EventDetailView: View {
-    let date: UpcomingDate
+struct WatchlistDetailView: View {
+    let item: WatchlistItem
     var onDelete: () -> Void
-    var onUpdate: (UpcomingDate) -> Void
+    var onUpdate: (WatchlistItem) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteAlert = false
     @State private var isEditing = false
-    @State private var editingDate: UpcomingDate
+    @State private var editingItem: WatchlistItem
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
@@ -19,27 +19,26 @@ struct EventDetailView: View {
         "tech", "sports", "entertainment", "gaming",
         "birthday", "travel", "personal", "business", "holiday"
     ]
-    private static let confidenceLevels = ["high", "medium", "low"]
+    private static let types = [
+        "one-time", "recurring-irregular", "recurring-predictable", "series", "category-watch"
+    ]
 
-    init(date: UpcomingDate, onDelete: @escaping () -> Void, onUpdate: @escaping (UpcomingDate) -> Void) {
-        self.date = date
+    init(item: WatchlistItem, onDelete: @escaping () -> Void, onUpdate: @escaping (WatchlistItem) -> Void) {
+        self.item = item
         self.onDelete = onDelete
         self.onUpdate = onUpdate
-        self._editingDate = State(initialValue: date)
+        self._editingItem = State(initialValue: item)
     }
 
-    private var selectedDate: Binding<Date> {
-        Binding(
-            get: {
-                editingDate.parsedDate ?? Date()
-            },
-            set: { newDate in
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
-                formatter.locale = Locale(identifier: "en_US_POSIX")
-                editingDate.date = formatter.string(from: newDate)
-            }
-        )
+    private func typeDisplayName(_ type: String) -> String {
+        switch type {
+        case "one-time": return "One-time"
+        case "recurring-irregular": return "Recurring (Irregular)"
+        case "recurring-predictable": return "Recurring (Predictable)"
+        case "series": return "Series"
+        case "category-watch": return "Category Watch"
+        default: return type.capitalized
+        }
     }
 
     var body: some View {
@@ -47,8 +46,8 @@ struct EventDetailView: View {
             Section {
                 if isEditing {
                     Picker("Category", selection: Binding(
-                        get: { editingDate.category ?? "" },
-                        set: { editingDate.category = $0.isEmpty ? nil : $0 }
+                        get: { editingItem.category ?? "" },
+                        set: { editingItem.category = $0.isEmpty ? nil : $0 }
                     )) {
                         Text("None").tag("")
                         ForEach(Self.categories, id: \.self) { cat in
@@ -56,19 +55,19 @@ struct EventDetailView: View {
                         }
                     }
                     .listRowSeparator(.hidden)
-                    TextField("Title", text: $editingDate.title)
+                    TextField("Title", text: $editingItem.title)
                         .font(.title2.bold())
                         .listRowSeparator(.hidden)
                     TextField("Notes (optional)", text: Binding(
-                        get: { editingDate.notes ?? "" },
-                        set: { editingDate.notes = $0.isEmpty ? nil : $0 }
+                        get: { editingItem.notes ?? "" },
+                        set: { editingItem.notes = $0.isEmpty ? nil : $0 }
                     ), axis: .vertical)
                     .lineLimit(3...6)
                     .listRowSeparator(.hidden)
                 } else {
-                    if let category = date.category {
+                    if let category = item.category {
                         HStack(spacing: 3) {
-                            Image(systemName: date.categoryIcon)
+                            Image(systemName: item.categoryIcon)
                                 .font(.caption2)
                             Text(category.capitalized)
                                 .font(.caption)
@@ -76,10 +75,10 @@ struct EventDetailView: View {
                         .foregroundStyle(.secondary)
                         .listRowSeparator(.hidden)
                     }
-                    Text(date.title)
+                    Text(item.title)
                         .font(.title2.bold())
                         .listRowSeparator(.hidden)
-                    if let notes = date.notes {
+                    if let notes = item.notes {
                         Text(notes)
                             .font(.body)
                             .foregroundStyle(.secondary)
@@ -91,40 +90,26 @@ struct EventDetailView: View {
 
             Section {
                 if isEditing {
-                    DatePicker("Date", selection: selectedDate, displayedComponents: .date)
-                    Picker("Confidence", selection: $editingDate.confidence) {
-                        ForEach(Self.confidenceLevels, id: \.self) { level in
-                            Text(level.capitalized).tag(level)
+                    Picker("Type", selection: $editingItem.type) {
+                        ForEach(Self.types, id: \.self) { t in
+                            Text(typeDisplayName(t)).tag(t)
                         }
                     }
                 } else {
-                    DetailRow(label: "Date", value: date.longDisplayDate)
-                    DetailRow(label: "Countdown", value: date.daysRemainingText)
-                    DetailRow(label: "Confidence", value: date.confidence.capitalized)
+                    DetailRow(label: "Type", value: item.typeLabel)
+                    if let addedDisplay = item.addedDisplay {
+                        DetailRow(label: "Added", value: addedDisplay.replacingOccurrences(of: "Added ", with: ""))
+                    }
                 }
             }
             .listRowBackground(bgColor)
-
-            if isEditing || date.source != nil {
-                Section {
-                    if isEditing {
-                        TextField("Source (optional)", text: Binding(
-                            get: { editingDate.source ?? "" },
-                            set: { editingDate.source = $0.isEmpty ? nil : $0 }
-                        ))
-                    } else if let source = date.source {
-                        DetailRow(label: "Source", value: source)
-                    }
-                }
-                .listRowBackground(bgColor)
-            }
 
             if !isEditing {
                 Section {
                     Button(role: .destructive) {
                         showDeleteAlert = true
                     } label: {
-                        Text("Delete Event")
+                        Text("Delete Item")
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -141,7 +126,7 @@ struct EventDetailView: View {
             if isEditing {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        editingDate = date
+                        editingItem = item
                         isEditing = false
                     }
                 }
@@ -153,20 +138,20 @@ struct EventDetailView: View {
                             Task { await save() }
                         }
                         .bold()
-                        .disabled(editingDate.title.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(editingItem.title.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Edit") {
-                        editingDate = date
+                        editingItem = item
                         isEditing = true
                     }
                 }
             }
         }
         .confirmationDialog(
-            "Delete \"\(date.title)\"?",
+            "Delete \"\(item.title)\"?",
             isPresented: $showDeleteAlert,
             titleVisibility: .visible
         ) {
@@ -187,8 +172,8 @@ struct EventDetailView: View {
     private func save() async {
         isSaving = true
         do {
-            try await SupabaseService.shared.updateDate(editingDate)
-            onUpdate(editingDate)
+            try await SupabaseService.shared.updateWatchlistItem(editingItem)
+            onUpdate(editingItem)
             isEditing = false
         } catch {
             errorMessage = "Failed to save changes. Please try again."

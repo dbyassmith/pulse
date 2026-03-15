@@ -25,6 +25,37 @@ function parseCitations(text: string): { cleanText: string; citations: Citation[
   return { cleanText, citations };
 }
 
+async function readSSEResponse(response: Response): Promise<string> {
+  const body = response.body;
+  if (!body) return "";
+
+  const decoder = new TextDecoder();
+  let fullContent = "";
+
+  for await (const chunk of body) {
+    const text = decoder.decode(chunk as Buffer, { stream: true });
+    const lines = text.split("\n");
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6).trim();
+      if (data === "[DONE]") continue;
+
+      try {
+        const parsed = JSON.parse(data);
+        const delta = parsed?.choices?.[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+        }
+      } catch {
+        // Skip malformed SSE chunks
+      }
+    }
+  }
+
+  return fullContent;
+}
+
 export async function queryBraveAnswers(question: string): Promise<BraveAnswerResult> {
   const { braveApiKey } = getConfig();
 
@@ -37,15 +68,14 @@ export async function queryBraveAnswers(question: string): Promise<BraveAnswerRe
     },
     body: JSON.stringify({
       model: "brave",
+      stream: true,
+      enable_citations: true,
       messages: [
         {
           role: "user",
           content: `What is the confirmed date for: ${question}`,
         },
       ],
-      extra_body: {
-        enable_citations: true,
-      },
     }),
   });
 
@@ -56,12 +86,11 @@ export async function queryBraveAnswers(question: string): Promise<BraveAnswerRe
   }
 
   if (!response.ok) {
-    throw new Error(`Brave Answers API error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(`Brave Answers API error: ${response.status} ${response.statusText} ${errorBody}`);
   }
 
-  const data = await response.json();
-
-  const rawContent = data?.choices?.[0]?.message?.content ?? "";
+  const rawContent = await readSSEResponse(response);
   if (!rawContent) {
     return { answer: "", citations: [] };
   }

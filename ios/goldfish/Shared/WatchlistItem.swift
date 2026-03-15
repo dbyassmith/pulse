@@ -2,8 +2,8 @@ import Foundation
 
 struct WatchlistItem: Codable, Identifiable, Hashable {
     let id: String
-    let title: String
-    let type: String
+    var title: String
+    var type: String
     var category: String?
     var status: String
     var notes: String?

@@ -5,9 +5,10 @@ struct ChatView: View {
     @State private var inputText = ""
     @State private var isStreaming = false
     @State private var activeToolStatus: ChatMessage.ToolStatus?
+    @State private var isThinking = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .bottom) {
             if messages.isEmpty {
                 emptyState
             } else {
@@ -37,9 +38,13 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 28) {
                     ForEach(messages) { message in
                         messageBubble(message)
+                    }
+                    if isThinking {
+                        thinkingIndicator
+                            .id("thinking-indicator")
                     }
                     if let tool = activeToolStatus {
                         toolIndicator(tool)
@@ -47,13 +52,17 @@ struct ChatView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.top, 12)
+                .padding(.bottom, 80)
             }
-            .defaultScrollAnchor(.bottom)
+            .defaultScrollAnchor(.top)
             .onChange(of: messages.last?.content) {
                 scrollToBottom(proxy)
             }
             .onChange(of: activeToolStatus?.label) {
+                scrollToBottom(proxy)
+            }
+            .onChange(of: isThinking) {
                 scrollToBottom(proxy)
             }
         }
@@ -64,6 +73,8 @@ struct ChatView: View {
             withAnimation(.easeOut(duration: 0.15)) {
                 if activeToolStatus != nil {
                     proxy.scrollTo("tool-indicator", anchor: .bottom)
+                } else if isThinking {
+                    proxy.scrollTo("thinking-indicator", anchor: .bottom)
                 } else {
                     proxy.scrollTo(lastId, anchor: .bottom)
                 }
@@ -73,19 +84,40 @@ struct ChatView: View {
 
     @ViewBuilder
     private func messageBubble(_ message: ChatMessage) -> some View {
-        HStack {
-            if message.role == .user { Spacer(minLength: 60) }
-
-            Text(message.content)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(message.role == .user ? Color.orange : Color(UIColor.systemGray5))
-                .foregroundStyle(message.role == .user ? .white : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            if message.role == .assistant { Spacer(minLength: 60) }
+        if message.role == .user {
+            HStack {
+                Spacer(minLength: 60)
+                Text(message.content)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .id(message.id)
+        } else {
+            Text(LocalizedStringKey(message.content))
+                .tint(.orange)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(message.id)
         }
-        .id(message.id)
+    }
+
+    private var thinkingIndicator: some View {
+        HStack {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Thinking...")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color(UIColor.systemGray5))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            Spacer(minLength: 60)
+        }
     }
 
     private func toolIndicator(_ status: ChatMessage.ToolStatus) -> some View {
@@ -106,13 +138,10 @@ struct ChatView: View {
     }
 
     private var inputBar: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             TextField("Ask about an event...", text: $inputText, axis: .vertical)
                 .lineLimit(1...4)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(UIColor.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.vertical, 3)
 
             Button {
                 if isStreaming {
@@ -121,15 +150,28 @@ struct ChatView: View {
                     sendMessage()
                 }
             } label: {
-                Image(systemName: isStreaming ? "stop.circle.fill" : "arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(isStreaming ? .red : (inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .orange))
+                Image(systemName: isStreaming ? "stop.fill" : "arrow.up")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(isStreaming ? .red : (inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.orange))
+                    .clipShape(Circle())
             }
             .disabled(!isStreaming && inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(.bar)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(UIColor.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .strokeBorder(Color(UIColor.systemGray4), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+        )
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
     }
 
     private func sendMessage() {
@@ -139,6 +181,7 @@ struct ChatView: View {
         messages.append(ChatMessage(role: .user, content: text))
         inputText = ""
         isStreaming = true
+        isThinking = true
 
         // Build history (only user/assistant text, no tool events)
         let history: [(role: String, content: String)] = messages
@@ -152,13 +195,16 @@ struct ChatView: View {
         ChatService.shared.sendMessage(messages: history) { event in
             switch event {
             case .textDelta(let text):
+                isThinking = false
                 activeToolStatus = nil
                 messages[assistantIndex].content += text
             case .toolStart(let tool):
+                isThinking = false
                 activeToolStatus = ChatMessage.toolStatus(for: tool)
             case .toolResult:
                 activeToolStatus = nil
             case .done:
+                isThinking = false
                 activeToolStatus = nil
                 isStreaming = false
                 // Remove empty assistant messages
@@ -166,6 +212,7 @@ struct ChatView: View {
                     messages.remove(at: assistantIndex)
                 }
             case .error(let message):
+                isThinking = false
                 activeToolStatus = nil
                 if messages[assistantIndex].content.isEmpty {
                     messages[assistantIndex].content = message
@@ -179,6 +226,7 @@ struct ChatView: View {
     private func stopStreaming() {
         ChatService.shared.cancel()
         isStreaming = false
+        isThinking = false
         activeToolStatus = nil
     }
 }

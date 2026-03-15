@@ -41,7 +41,7 @@ struct UpcomingDate: Codable, Identifiable, Hashable {
 
     private static let displayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "MMM d"
+        f.dateFormat = "EEE MMM d"
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()

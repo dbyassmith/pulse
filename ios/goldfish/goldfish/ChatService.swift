@@ -36,6 +36,9 @@ final class ChatService {
             do {
                 let session = try await SupabaseService.shared.client.auth.session
                 let accessToken = session.accessToken
+                print("[ChatService] Token prefix: \(String(accessToken.prefix(20)))...")
+                print("[ChatService] Base URL: \(baseURL)")
+                print("[ChatService] Token length: \(accessToken.count)")
 
                 guard let url = URL(string: "\(baseURL)/chat") else {
                     onEvent(.error("Invalid API URL"))
@@ -54,12 +57,24 @@ final class ChatService {
                 let (bytes, response) = try await URLSession.shared.bytes(for: request)
 
                 if let httpResponse = response as? HTTPURLResponse {
+                    print("[ChatService] Response status: \(httpResponse.statusCode)")
                     if httpResponse.statusCode == 401 {
+                        // Try to read the response body for more detail
+                        var body = ""
+                        for try await line in bytes.lines {
+                            body += line
+                        }
+                        print("[ChatService] 401 response body: \(body)")
                         onEvent(.error("Session expired. Please sign out and sign back in."))
                         onEvent(.done)
                         return
                     }
                     if httpResponse.statusCode != 200 {
+                        var body = ""
+                        for try await line in bytes.lines {
+                            body += line
+                        }
+                        print("[ChatService] Error response body: \(body)")
                         onEvent(.error("Server error (\(httpResponse.statusCode))"))
                         onEvent(.done)
                         return
@@ -69,27 +84,35 @@ final class ChatService {
                 var eventType = ""
                 var dataBuffer = ""
 
+                // Note: bytes.lines skips empty lines, so we can't rely on
+                // blank-line delimiters. Instead, emit the buffered event
+                // whenever a new "event:" line arrives.
                 for try await line in bytes.lines {
                     if Task.isCancelled { return }
 
-                    if line.isEmpty {
-                        // Blank line = end of event
+                    if line.hasPrefix("event: ") {
+                        // New event starting — flush previous if complete
                         if !eventType.isEmpty && !dataBuffer.isEmpty {
                             let event = parseEvent(type: eventType, data: dataBuffer)
                             onEvent(event)
                             if case .done = event { return }
                         }
-                        eventType = ""
-                        dataBuffer = ""
-                    } else if line.hasPrefix("event: ") {
                         eventType = String(line.dropFirst(7))
+                        dataBuffer = ""
                     } else if line.hasPrefix("data: ") {
                         dataBuffer = String(line.dropFirst(6))
                     }
                 }
 
+                // Flush last buffered event
+                if !eventType.isEmpty && !dataBuffer.isEmpty {
+                    let event = parseEvent(type: eventType, data: dataBuffer)
+                    onEvent(event)
+                    if case .done = event { return }
+                }
+
                 // Stream ended without done event
-                if currentTask != nil && !Task.isCancelled {
+                if !Task.isCancelled {
                     onEvent(.done)
                 }
             } catch is CancellationError {

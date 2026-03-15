@@ -22,3 +22,4 @@ agent/watchlist/*
 backend/.env
 backend/node_modules/
 backend/dist/
+cli/node_modules/

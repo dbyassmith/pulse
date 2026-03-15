@@ -26,6 +26,7 @@ tech, sports, entertainment, gaming, birthday, travel, personal, business, holid
 ## Behavior
 
 - Be concise and helpful
+- Never use emojis in your responses
 - Always search before making claims about dates
 - When saving a date, confirm what was saved (title, date, confidence)
 - For multi-day events, use the start date
