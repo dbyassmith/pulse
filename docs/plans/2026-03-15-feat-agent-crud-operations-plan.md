@@ -1,7 +1,7 @@
 ---
 title: "feat: Add list, update, and delete tools to conversational agent"
 type: feat
-status: active
+status: completed
 date: 2026-03-15
 ---
 
@@ -212,41 +212,41 @@ The iOS app can already list/update/delete via direct Supabase calls in `Supabas
 ## Acceptance Criteria
 
 ### List Tools
-- [ ] `list_confirmed_dates` returns slim data: id, title, date, category
-- [ ] `list_confirmed_dates` returns future dates sorted by date ascending, with total count
-- [ ] `list_confirmed_dates` accepts optional `category` filter and `include_past` flag
-- [ ] `list_watchlist_items` returns slim data: id, title, category, status
-- [ ] `list_watchlist_items` returns active items sorted by added date descending, with total count
-- [ ] `list_watchlist_items` accepts optional `category` and `status` filters
-- [ ] Both list tools default to 25 items with offset-based pagination
+- [x] `list_confirmed_dates` returns slim data: id, title, date, category
+- [x] `list_confirmed_dates` returns future dates sorted by date ascending, with total count
+- [x] `list_confirmed_dates` accepts optional `category` filter and `include_past` flag
+- [x] `list_watchlist_items` returns slim data: id, title, category, status
+- [x] `list_watchlist_items` returns active items sorted by added date descending, with total count
+- [x] `list_watchlist_items` accepts optional `category` and `status` filters
+- [x] Both list tools default to 25 items with offset-based pagination
 
 ### Get Details Tool
-- [ ] `get_item_details` accepts `table` (confirmed_dates or watchlist_items) and `id`
-- [ ] Returns the full record for the matching item
-- [ ] Returns error if item not found or belongs to another user
+- [x] `get_item_details` accepts `table` (confirmed_dates or watchlist_items) and `id`
+- [x] Returns the full record for the matching item
+- [x] Returns error if item not found or belongs to another user
 
 ### Update Tools
-- [ ] `update_confirmed_date` takes `id` + partial fields, updates only provided fields
-- [ ] `update_watchlist_item` takes `id` + partial fields, updates only provided fields and sets `updated_at`
-- [ ] Both return error if no fields provided
-- [ ] Both scope by user_id for security
+- [x] `update_confirmed_date` takes `id` + partial fields, updates only provided fields
+- [x] `update_watchlist_item` takes `id` + partial fields, updates only provided fields and sets `updated_at`
+- [x] Both return error if no fields provided
+- [x] Both scope by user_id for security
 
 ### Delete Tools
-- [ ] `delete_confirmed_date` hard deletes by id + user_id
-- [ ] `delete_watchlist_item` hard deletes by id + user_id
-- [ ] Agent always asks for user confirmation before calling delete tools (system prompt enforced)
+- [x] `delete_confirmed_date` hard deletes by id + user_id
+- [x] `delete_watchlist_item` hard deletes by id + user_id
+- [x] Agent always asks for user confirmation before calling delete tools (system prompt enforced)
 
 ### System Prompt
-- [ ] Updated to describe all new capabilities
-- [ ] Includes delete confirmation rule
-- [ ] Includes list-then-act guidance for update/delete
-- [ ] Includes re-search-then-update guidance (avoid duplicates)
-- [ ] Includes conversational presentation guidance for lists
+- [x] Updated to describe all new capabilities
+- [x] Includes delete confirmation rule
+- [x] Includes list-then-act guidance for update/delete
+- [x] Includes re-search-then-update guidance (avoid duplicates)
+- [x] Includes conversational presentation guidance for lists
 
 ### General
-- [ ] All 7 new tools registered in `TOOL_DEFINITIONS` array
-- [ ] All 7 new tools handled in `executeTool` switch statement
-- [ ] No new files created -- all changes in existing agent files
+- [x] All 7 new tools registered in `TOOL_DEFINITIONS` array
+- [x] All 7 new tools handled in `executeTool` switch statement
+- [x] No new files created -- all changes in existing agent files
 
 ## Success Metrics
 

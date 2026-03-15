@@ -18,6 +18,20 @@ export async function executeTool(
       return executeAddConfirmedDate(input, context);
     case "create_watchlist_item":
       return executeCreateWatchlistItem(input, context);
+    case "list_confirmed_dates":
+      return executeListConfirmedDates(input, context);
+    case "list_watchlist_items":
+      return executeListWatchlistItems(input, context);
+    case "get_item_details":
+      return executeGetItemDetails(input, context);
+    case "update_confirmed_date":
+      return executeUpdateConfirmedDate(input, context);
+    case "update_watchlist_item":
+      return executeUpdateWatchlistItem(input, context);
+    case "delete_confirmed_date":
+      return executeDeleteConfirmedDate(input, context);
+    case "delete_watchlist_item":
+      return executeDeleteWatchlistItem(input, context);
     default:
       return JSON.stringify({ error: `Unknown tool: ${name}` });
   }
@@ -91,6 +105,169 @@ async function executeCreateWatchlistItem(
     title: input.title,
     type: input.type,
   });
+}
+
+async function executeListConfirmedDates(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const limit = (input.limit as number) || 25;
+  const offset = (input.offset as number) || 0;
+
+  let query = context.supabase
+    .from("confirmed_dates")
+    .select("id, title, date, category", { count: "exact" })
+    .eq("user_id", context.userId)
+    .order("date", { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (!input.include_past) {
+    query = query.gte("date", new Date().toISOString().split("T")[0]);
+  }
+  if (input.category) {
+    query = query.eq("category", (input.category as string).toLowerCase());
+  }
+
+  const { data, error, count } = await query;
+  if (error) return JSON.stringify({ error: error.message });
+  return JSON.stringify({ items: data, total: count, returned: data?.length ?? 0 });
+}
+
+async function executeListWatchlistItems(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const limit = (input.limit as number) || 25;
+  const offset = (input.offset as number) || 0;
+
+  let query = context.supabase
+    .from("watchlist_items")
+    .select("id, title, category, status", { count: "exact" })
+    .eq("user_id", context.userId)
+    .order("added", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const status = (input.status as string) || "active";
+  query = query.eq("status", status);
+
+  if (input.category) {
+    query = query.eq("category", (input.category as string).toLowerCase());
+  }
+
+  const { data, error, count } = await query;
+  if (error) return JSON.stringify({ error: error.message });
+  return JSON.stringify({ items: data, total: count, returned: data?.length ?? 0 });
+}
+
+async function executeGetItemDetails(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const table = input.table as "confirmed_dates" | "watchlist_items";
+  const { data, error } = await context.supabase
+    .from(table)
+    .select("*")
+    .eq("id", input.id as string)
+    .eq("user_id", context.userId)
+    .single();
+
+  if (error) return JSON.stringify({ error: `Item not found: ${error.message}` });
+  return JSON.stringify(data);
+}
+
+async function executeUpdateConfirmedDate(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const updates: Record<string, unknown> = {};
+  for (const key of ["title", "date", "confidence", "source", "notes", "category"]) {
+    if (input[key] !== undefined) {
+      updates[key] = key === "category" ? (input[key] as string).toLowerCase() : input[key];
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return JSON.stringify({ error: "No fields to update. Provide at least one field to change." });
+  }
+
+  const { data, error } = await context.supabase
+    .from("confirmed_dates")
+    .update(updates)
+    .eq("id", input.id as string)
+    .eq("user_id", context.userId)
+    .select("id, title")
+    .maybeSingle();
+
+  if (error) return JSON.stringify({ error: error.message });
+  if (!data) return JSON.stringify({ error: `No confirmed date found with ID "${input.id}".` });
+  return JSON.stringify({ success: true, id: data.id, title: data.title, updated_fields: Object.keys(updates) });
+}
+
+async function executeUpdateWatchlistItem(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const key of ["title", "type", "category", "notes", "status"]) {
+    if (input[key] !== undefined) {
+      updates[key] = key === "category" ? (input[key] as string).toLowerCase() : input[key];
+    }
+  }
+
+  if (Object.keys(updates).length === 1) {
+    return JSON.stringify({ error: "No fields to update. Provide at least one field to change." });
+  }
+
+  const { data, error } = await context.supabase
+    .from("watchlist_items")
+    .update(updates)
+    .eq("id", input.id as string)
+    .eq("user_id", context.userId)
+    .select("id, title")
+    .maybeSingle();
+
+  if (error) return JSON.stringify({ error: error.message });
+  if (!data) return JSON.stringify({ error: `No watchlist item found with ID "${input.id}".` });
+  return JSON.stringify({
+    success: true,
+    id: data.id,
+    title: data.title,
+    updated_fields: Object.keys(updates).filter((k) => k !== "updated_at"),
+  });
+}
+
+async function executeDeleteConfirmedDate(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const { data, error } = await context.supabase
+    .from("confirmed_dates")
+    .delete()
+    .eq("id", input.id as string)
+    .eq("user_id", context.userId)
+    .select("id, title")
+    .maybeSingle();
+
+  if (error) return JSON.stringify({ error: error.message });
+  if (!data) return JSON.stringify({ error: `No confirmed date found with ID "${input.id}".` });
+  return JSON.stringify({ success: true, deleted: { id: data.id, title: data.title } });
+}
+
+async function executeDeleteWatchlistItem(
+  input: Record<string, unknown>,
+  context: ToolContext
+): Promise<string> {
+  const { data, error } = await context.supabase
+    .from("watchlist_items")
+    .delete()
+    .eq("id", input.id as string)
+    .eq("user_id", context.userId)
+    .select("id, title")
+    .maybeSingle();
+
+  if (error) return JSON.stringify({ error: error.message });
+  if (!data) return JSON.stringify({ error: `No watchlist item found with ID "${input.id}".` });
+  return JSON.stringify({ success: true, deleted: { id: data.id, title: data.title } });
 }
 
 function slugify(text: string): string {
