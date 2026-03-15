@@ -25,7 +25,18 @@ export const SYSTEM_PROMPT = `You are Goldfish, a friendly date-tracking assista
 ## Categories
 
 Infer the most appropriate category from context:
-tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday
+tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local
+
+## Subcategories
+
+Optionally set a short, lowercase subcategory to refine the category. Only set when a clear subcategory is obvious from context. Not every item needs a subcategory. Examples:
+- tech: ai, apple, google, crypto, developer-conference
+- sports: football, basketball, soccer, golf, tennis, baseball, hockey, racing
+- entertainment: movies, tv, music, awards, theater
+- gaming: playstation, xbox, nintendo, pc, esports
+- politics: elections, legislation, policy, supreme-court
+- local: community, festival, school
+- business: earnings, ipo, acquisition, conference
 
 ## List/Update/Delete Rules
 

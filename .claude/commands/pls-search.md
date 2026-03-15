@@ -14,7 +14,8 @@ Search the web to find a confirmed date for the following event, then add it to 
      - `high` — official/first-party source (company website, official social account, press release)
      - `medium` — reputable press (major tech publications, established news outlets)
      - `low` — rumors, leaks, forums, unnamed sources
-   - The **category** — one of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday` (or a new short, lowercase, single-word category if none fit)
+   - The **category** — one of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday`, `politics`, `local` (or a new short, lowercase, single-word category if none fit)
+   - The **subcategory** — an optional short, lowercase refinement of the category (e.g. ai, nfl, elections, community)
    - Brief **notes** summarizing what you found and why you trust (or don't trust) the source
 
 3. **Report your findings.** Before running any command, tell me:
@@ -30,7 +31,7 @@ Search the web to find a confirmed date for the following event, then add it to 
       - **title** — Clean, human-readable event name
       - **id** — Slugified title (lowercase, hyphens, no special chars)
       - **type** — One of: `one-time`, `recurring-irregular`, `recurring-predictable`, `series`, `category-watch`
-      - **category** — One of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday` (or a new short, lowercase, single-word category if none fit)
+      - **category** — One of: `tech`, `sports`, `entertainment`, `gaming`, `birthday`, `travel`, `personal`, `business`, `holiday`, `politics`, `local` (or a new short, lowercase, single-word category if none fit)
       - **search_queries** — 2-4 refined web search queries (improve on what was already tried)
       - **confirmed_when** — Plain English criteria for what counts as a confirmed date
       - **confidence_threshold** — Default to `medium`
@@ -45,6 +46,7 @@ Search the web to find a confirmed date for the following event, then add it to 
       id: "<id>"
       type: <type>
       category: <category>
+      subcategory: <subcategory if obvious, otherwise omit>
       added: <today's date YYYY-MM-DD>
       confidence_threshold: <confidence_threshold>
       search_queries:
@@ -72,7 +74,8 @@ Search the web to find a confirmed date for the following event, then add it to 
      --confidence "<high|medium|low>" \
      --source "<source-url>" \
      --notes "<brief summary of findings>" \
-     --category "<category>"
+     --category "<category>" \
+     --subcategory "<subcategory>"
    ```
 
    **ID rules:** Take the title, lowercase it, replace spaces and special characters with hyphens, strip trailing hyphens. Examples: "WWDC 2026" → `wwdc-2026`, "iPhone 17 Launch" → `iphone-17-launch`.

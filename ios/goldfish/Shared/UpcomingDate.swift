@@ -6,6 +6,7 @@ struct UpcomingDate: Codable, Identifiable, Hashable {
     var date: String
     var confidence: String
     var category: String?
+    var subcategory: String?
     var source: String? = nil
     var notes: String? = nil
     var created_at: String? = nil
@@ -78,6 +79,8 @@ struct UpcomingDate: Codable, Identifiable, Hashable {
         case "personal": return "person"
         case "business": return "briefcase"
         case "holiday": return "star"
+        case "politics": return "building.columns"
+        case "local": return "mappin.and.ellipse"
         default: return "tag"
         }
     }

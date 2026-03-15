@@ -17,7 +17,8 @@ struct EventDetailView: View {
 
     private static let categories = [
         "tech", "sports", "entertainment", "gaming",
-        "birthday", "travel", "personal", "business", "holiday"
+        "birthday", "travel", "personal", "business", "holiday",
+        "politics", "local"
     ]
     private static let confidenceLevels = ["high", "medium", "low"]
 
@@ -56,6 +57,11 @@ struct EventDetailView: View {
                         }
                     }
                     .listRowSeparator(.hidden)
+                    TextField("Subcategory (optional)", text: Binding(
+                        get: { editingDate.subcategory ?? "" },
+                        set: { editingDate.subcategory = $0.isEmpty ? nil : $0.lowercased().trimmingCharacters(in: .whitespaces) }
+                    ))
+                    .listRowSeparator(.hidden)
                     TextField("Title", text: $editingDate.title)
                         .font(.title2.bold())
                         .listRowSeparator(.hidden)
@@ -70,7 +76,7 @@ struct EventDetailView: View {
                         HStack(spacing: 3) {
                             Image(systemName: date.categoryIcon)
                                 .font(.caption2)
-                            Text(category.capitalized)
+                            Text(date.subcategory != nil ? "\(category.capitalized) — \(date.subcategory!.capitalized)" : category.capitalized)
                                 .font(.caption)
                         }
                         .foregroundStyle(.secondary)

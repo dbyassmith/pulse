@@ -33,6 +33,7 @@ title: WWDC 2026
 id: wwdc-2026
 type: recurring-irregular
 category: tech
+subcategory: apple
 added: 2026-03-06
 confidence_threshold: medium
 search_queries:
@@ -61,6 +62,7 @@ confirmed_when: >
 | Field | Description |
 |-------|-------------|
 | `category` | Event category (see Preset Categories below) |
+| `subcategory` | Optional freeform subcategory to refine the category (e.g. ai, nfl, elections) |
 | `last_checked` | Date of most recent search (YYYY-MM-DD) |
 | `notes` | Free-text context from the user |
 | `parent_id` | For requeued items, links to the resolved parent |
@@ -81,6 +83,8 @@ Use one of these when it fits. If an event doesn't match a preset, create a shor
 | `personal` | Other personal milestones and deadlines |
 | `business` | Earnings, industry events, business deadlines |
 | `holiday` | Public holidays, observances |
+| `politics` | Elections, legislation, policy deadlines, debates |
+| `local` | Community events, city council, local festivals |
 
 ### Resolved File Additions
 
@@ -140,7 +144,8 @@ goldfish date add \
   --confidence "<high|medium|low>" \
   --source "<source-url>" \
   --notes "<brief summary of findings>" \
-  --category "<category>"
+  --category "<category>" \
+  --subcategory "<subcategory>"
 ```
 
 | Flag | Required | Description |
@@ -152,6 +157,7 @@ goldfish date add \
 | `--source` | Optional | URL where the date was found |
 | `--notes` | Optional | Brief context about the finding |
 | `--category` | Optional | Event category (see Preset Categories) |
+| `--subcategory` | Optional | Freeform subcategory to refine the category |
 
 ### goldfish watchlist sync
 
@@ -178,7 +184,8 @@ goldfish watchlist resolve \
   --confidence "<high|medium|low>" \
   --source "<source-url>" \
   --notes "<brief summary>" \
-  --category "<category>"
+  --category "<category>" \
+  --subcategory "<subcategory>"
 ```
 
 This replaces calling `goldfish date add` directly for resolved watchlist items. It inserts into `confirmed_dates` and updates the watchlist item's status in one command.

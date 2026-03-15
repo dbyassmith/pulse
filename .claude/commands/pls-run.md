@@ -49,7 +49,9 @@ Read all `.md` files in `agent/watchlist/`. For each file:
        --date "<YYYY-MM-DD>" \
        --confidence "<high|medium|low>" \
        --source "<source-url>" \
-       --notes "<brief summary of what was found>"
+       --notes "<brief summary of what was found>" \
+       --category "<category>" \
+       --subcategory "<subcategory if obvious>"
      ```
    - Read the current watchlist file, add resolution metadata to the frontmatter:
      ```yaml

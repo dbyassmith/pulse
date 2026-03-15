@@ -18,7 +18,8 @@ From the user's plain English description, infer:
   - `recurring-predictable` — Repeats on a known schedule (US Election Day, Black Friday)
   - `series` — Multi-part events with many dates (F1 season, concert tour)
   - `category-watch` — Ongoing category, not a specific event ("next Apple event", "next SpaceX launch")
-- **category** — One of the preset categories: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday. If the event doesn't fit a preset, create a short, lowercase, single-word category. Infer from context — don't ask the user unless truly ambiguous.
+- **category** — One of the preset categories: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local. If the event doesn't fit a preset, create a short, lowercase, single-word category. Infer from context — don't ask the user unless truly ambiguous.
+- **subcategory** — An optional short, lowercase refinement of the category (e.g. ai, nfl, elections, community). Only set when clearly obvious from context.
 - **search_queries** — 2-4 web search queries that would surface a confirmed date. Be specific. Include the year. Try both official and press angles.
 - **confirmed_when** — Plain English criteria for what counts as a confirmed date. Reference specific authoritative sources when possible.
 - **confidence_threshold** — Default to `medium` unless the user indicates they want only official sources (`high`) or are okay with rumors (`low`).
@@ -48,6 +49,7 @@ title: "<title>"
 id: "<id>"
 type: <type>
 category: <category>
+subcategory: <subcategory if obvious, otherwise omit>
 added: <today's date YYYY-MM-DD>
 confidence_threshold: <high|medium|low>
 search_queries:

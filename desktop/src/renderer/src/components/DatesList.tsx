@@ -9,6 +9,8 @@ import {
   User,
   Briefcase,
   Star,
+  Landmark,
+  MapPin,
   Tag,
   type LucideIcon
 } from 'lucide-react'
@@ -22,7 +24,9 @@ const categoryIcons: Record<string, LucideIcon> = {
   travel: Plane,
   personal: User,
   business: Briefcase,
-  holiday: Star
+  holiday: Star,
+  politics: Landmark,
+  local: MapPin
 }
 
 interface UpcomingDate {
@@ -33,6 +37,7 @@ interface UpcomingDate {
   source?: string
   notes?: string
   category?: string
+  subcategory?: string
 }
 
 function DatesList(): JSX.Element {
@@ -78,7 +83,10 @@ function DatesList(): JSX.Element {
           })()}
           <div style={styles.rowLeft}>
             <span style={styles.dateTitle}>{date.title}</span>
-            <span style={styles.dateDate}>{formatDate(date.date)}</span>
+            <span style={styles.dateDate}>
+              {formatDate(date.date)}
+              {date.subcategory && ` · ${date.subcategory}`}
+            </span>
           </div>
           <span style={styles.daysUntil}>{daysUntil(date.date)}</span>
         </div>

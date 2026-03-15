@@ -46,6 +46,8 @@ Then write the file to `agent/watchlist/<id>.md` using this format:
 title: "<title>"
 id: "<id>"
 type: <type>
+category: <category>
+subcategory: <subcategory if obvious, otherwise omit>
 added: <today's date YYYY-MM-DD>
 confidence_threshold: <high|medium|low>
 search_queries:

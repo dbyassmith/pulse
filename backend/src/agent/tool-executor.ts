@@ -58,6 +58,7 @@ async function executeAddConfirmedDate(
     source: (input.source as string) ?? null,
     notes: (input.notes as string) ?? null,
     category: ((input.category as string) ?? "").toLowerCase() || null,
+    subcategory: ((input.subcategory as string) ?? "").toLowerCase().trim() || null,
   });
 
   if (error) {
@@ -85,6 +86,7 @@ async function executeCreateWatchlistItem(
       title: input.title,
       type: input.type || "one-time",
       category: ((input.category as string) ?? "").toLowerCase() || null,
+      subcategory: ((input.subcategory as string) ?? "").toLowerCase().trim() || null,
       notes: (input.notes as string) ?? null,
       added: new Date().toISOString(),
       status: "active",
@@ -180,9 +182,11 @@ async function executeUpdateConfirmedDate(
   context: ToolContext
 ): Promise<string> {
   const updates: Record<string, unknown> = {};
-  for (const key of ["title", "date", "confidence", "source", "notes", "category"]) {
+  for (const key of ["title", "date", "confidence", "source", "notes", "category", "subcategory"]) {
     if (input[key] !== undefined) {
-      updates[key] = key === "category" ? (input[key] as string).toLowerCase() : input[key];
+      updates[key] = key === "category" || key === "subcategory"
+        ? (input[key] as string).toLowerCase().trim()
+        : input[key];
     }
   }
 
@@ -208,9 +212,11 @@ async function executeUpdateWatchlistItem(
   context: ToolContext
 ): Promise<string> {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  for (const key of ["title", "type", "category", "notes", "status"]) {
+  for (const key of ["title", "type", "category", "subcategory", "notes", "status"]) {
     if (input[key] !== undefined) {
-      updates[key] = key === "category" ? (input[key] as string).toLowerCase() : input[key];
+      updates[key] = key === "category" || key === "subcategory"
+        ? (input[key] as string).toLowerCase().trim()
+        : input[key];
     }
   }
 

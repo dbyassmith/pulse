@@ -14,6 +14,7 @@ interface DateEntry {
   notes?: string;
   id?: string;
   category?: string;
+  subcategory?: string;
 }
 
 function validateEntry(entry: DateEntry, index?: number): string | null {
@@ -58,7 +59,8 @@ dateCommand
   .option("--source <text>", "Where this date came from")
   .option("--notes <text>", "Additional notes")
   .option("--id <text>", "Custom ID (auto-generated if omitted)")
-  .option("--category <text>", "Category (e.g. tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday)")
+  .option("--category <text>", "Category (e.g. tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local)")
+  .option("--subcategory <text>", "Subcategory to refine the category (e.g. ai, nfl, elections)")
   .action(async (opts) => {
     const validationError = validateEntry(opts);
     if (validationError) {
@@ -78,6 +80,7 @@ dateCommand
       source: opts.source ?? null,
       notes: opts.notes ?? null,
       category: opts.category?.toLowerCase() ?? null,
+      subcategory: opts.subcategory?.toLowerCase().trim() ?? null,
     });
 
     if (error) {
@@ -128,6 +131,7 @@ dateCommand
       source: entry.source ?? null,
       notes: entry.notes ?? null,
       category: entry.category?.toLowerCase() ?? null,
+      subcategory: entry.subcategory?.toLowerCase().trim() ?? null,
       group_id: groupId,
       group_index: i,
     }));

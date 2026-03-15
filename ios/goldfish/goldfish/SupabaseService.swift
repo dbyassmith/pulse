@@ -39,7 +39,7 @@ final class SupabaseService {
         let today = Self.todayString()
         let dates: [UpcomingDate] = try await client
             .from("confirmed_dates")
-            .select("id, title, date, confidence, category, source, notes")
+            .select("id, title, date, confidence, category, subcategory, source, notes")
             .gte("date", value: today)
             .order("date", ascending: true)
             .execute()
@@ -66,6 +66,7 @@ final class SupabaseService {
             let date: String
             let confidence: String
             let category: String?
+            let subcategory: String?
             let source: String?
             let notes: String?
         }
@@ -74,6 +75,7 @@ final class SupabaseService {
             date: date.date,
             confidence: date.confidence,
             category: date.category,
+            subcategory: date.subcategory,
             source: date.source,
             notes: date.notes
         )
@@ -87,7 +89,7 @@ final class SupabaseService {
     func fetchWatchlistItems() async throws -> [WatchlistItem] {
         let items: [WatchlistItem] = try await client
             .from("watchlist_items")
-            .select("id, title, type, category, status, notes, added")
+            .select("id, title, type, category, subcategory, status, notes, added")
             .eq("status", value: "active")
             .order("added", ascending: false)
             .execute()
@@ -100,12 +102,14 @@ final class SupabaseService {
             let title: String
             let type: String
             let category: String?
+            let subcategory: String?
             let notes: String?
         }
         let payload = ItemUpdate(
             title: item.title,
             type: item.type,
             category: item.category,
+            subcategory: item.subcategory,
             notes: item.notes
         )
         try await client

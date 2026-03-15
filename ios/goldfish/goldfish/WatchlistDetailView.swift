@@ -17,7 +17,8 @@ struct WatchlistDetailView: View {
 
     private static let categories = [
         "tech", "sports", "entertainment", "gaming",
-        "birthday", "travel", "personal", "business", "holiday"
+        "birthday", "travel", "personal", "business", "holiday",
+        "politics", "local"
     ]
     private static let types = [
         "one-time", "recurring-irregular", "recurring-predictable", "series", "category-watch"
@@ -55,6 +56,11 @@ struct WatchlistDetailView: View {
                         }
                     }
                     .listRowSeparator(.hidden)
+                    TextField("Subcategory (optional)", text: Binding(
+                        get: { editingItem.subcategory ?? "" },
+                        set: { editingItem.subcategory = $0.isEmpty ? nil : $0.lowercased().trimmingCharacters(in: .whitespaces) }
+                    ))
+                    .listRowSeparator(.hidden)
                     TextField("Title", text: $editingItem.title)
                         .font(.title2.bold())
                         .listRowSeparator(.hidden)
@@ -69,7 +75,7 @@ struct WatchlistDetailView: View {
                         HStack(spacing: 3) {
                             Image(systemName: item.categoryIcon)
                                 .font(.caption2)
-                            Text(category.capitalized)
+                            Text(item.subcategory != nil ? "\(category.capitalized) — \(item.subcategory!.capitalized)" : category.capitalized)
                                 .font(.caption)
                         }
                         .foregroundStyle(.secondary)

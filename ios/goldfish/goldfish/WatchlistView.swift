@@ -121,7 +121,7 @@ struct WatchlistView: View {
                         Text("·")
                             .font(.caption)
                             .foregroundStyle(.quaternary)
-                        Text(category.capitalized)
+                        Text(item.subcategory != nil ? "\(category.capitalized) — \(item.subcategory!.capitalized)" : category.capitalized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

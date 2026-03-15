@@ -5,6 +5,7 @@ struct WatchlistItem: Codable, Identifiable, Hashable {
     var title: String
     var type: String
     var category: String?
+    var subcategory: String?
     var status: String
     var notes: String?
     var added: String?

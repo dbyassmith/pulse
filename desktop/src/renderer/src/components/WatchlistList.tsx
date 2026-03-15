@@ -5,6 +5,7 @@ interface WatchlistItem {
   title: string
   type: string
   category?: string
+  subcategory?: string
   added?: string
   confidence_threshold?: string
   last_checked?: string
@@ -31,7 +32,11 @@ function WatchlistList(): JSX.Element {
           <div style={styles.rowLeft}>
             <span style={styles.itemTitle}>{item.title}</span>
             <div style={styles.meta}>
-              {item.category && <span style={styles.badge}>{item.category}</span>}
+              {item.category && (
+                <span style={styles.badge}>
+                  {item.subcategory ? `${item.category} / ${item.subcategory}` : item.category}
+                </span>
+              )}
               <span style={styles.type}>{formatType(item.type)}</span>
             </div>
           </div>

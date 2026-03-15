@@ -48,7 +48,12 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday",
+            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+        },
+        subcategory: {
+          type: "string",
+          description:
+            "Optional short subcategory to refine the category (e.g. ai, nfl, elections, community)",
         },
       },
       required: ["title", "date", "confidence"],
@@ -80,7 +85,12 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday",
+            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+        },
+        subcategory: {
+          type: "string",
+          description:
+            "Optional short subcategory to refine the category (e.g. ai, nfl, elections, community)",
         },
         notes: {
           type: "string",
@@ -100,7 +110,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday",
+            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
         },
         include_past: {
           type: "boolean",
@@ -128,7 +138,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday",
+            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
         },
         status: {
           type: "string",
@@ -203,6 +213,10 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
           type: "string",
           description: "New category",
         },
+        subcategory: {
+          type: "string",
+          description: "New subcategory",
+        },
       },
       required: ["id"],
     },
@@ -236,6 +250,10 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description: "New category",
+        },
+        subcategory: {
+          type: "string",
+          description: "New subcategory",
         },
         notes: {
           type: "string",
