@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var selectedDate: UpcomingDate?
     @State private var showChat = false
     @State private var chatID = UUID()
+    @State private var refreshToken = UUID()
     var onSignOut: () -> Void
 
     private var availableCategories: [String] {
@@ -92,7 +93,10 @@ struct ContentView: View {
             .overlay(alignment: .bottomTrailing) {
                 chatFAB
             }
-            .sheet(isPresented: $showChat) {
+            .sheet(isPresented: $showChat, onDismiss: {
+                refreshToken = UUID()
+                Task { await loadDates() }
+            }) {
                 chatSheet
             }
         }
@@ -114,7 +118,8 @@ struct ContentView: View {
                 .opacity(selectedTab == 0 ? 1 : 0)
             WatchlistView(
                 selectedCategory: selectedWatchlistCategory,
-                onCategoriesChanged: { availableWatchlistCategories = $0 }
+                onCategoriesChanged: { availableWatchlistCategories = $0 },
+                refreshToken: refreshToken
             )
                 .opacity(selectedTab == 1 ? 1 : 0)
         }

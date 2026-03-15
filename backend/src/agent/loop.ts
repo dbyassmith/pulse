@@ -1,26 +1,74 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Response } from "express";
 import { getConfig } from "../lib/config.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { TOOL_DEFINITIONS } from "./tools.js";
-import { executeTool } from "./tool-executor.js";
+import { executeTool, type ToolContext } from "./tool-executor.js";
 
 const MAX_TOOL_ROUNDS = 10;
 const MODEL = "claude-sonnet-4-6";
+const LOOP_TIMEOUT_MS = 120_000;
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
-interface ToolContext {
-  supabase: SupabaseClient;
-  userId: string;
+// Module-scope singleton Anthropic client (lazy-initialized)
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    const { anthropicApiKey } = getConfig();
+    anthropicClient = new Anthropic({ apiKey: anthropicApiKey });
+  }
+  return anthropicClient;
 }
 
 function sendSSE(res: Response, event: string, data: unknown) {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+/**
+ * Query Supabase for a slim data summary to inject into the system prompt,
+ * giving the agent awareness of the user's current data.
+ */
+async function buildContextSummary(context: ToolContext): Promise<string> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const [datesResult, watchlistResult, upcomingResult] = await Promise.all([
+    context.supabase
+      .from("confirmed_dates")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.userId)
+      .gte("date", today),
+    context.supabase
+      .from("watchlist_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.userId)
+      .eq("status", "active"),
+    context.supabase
+      .from("confirmed_dates")
+      .select("title, date")
+      .eq("user_id", context.userId)
+      .gte("date", today)
+      .order("date", { ascending: true })
+      .limit(3),
+  ]);
+
+  const dateCount = datesResult.count ?? 0;
+  const watchlistCount = watchlistResult.count ?? 0;
+  const upcoming = upcomingResult.data ?? [];
+
+  let summary = `\n\nUser context: ${dateCount} upcoming confirmed date(s), ${watchlistCount} active watchlist item(s).`;
+  if (upcoming.length > 0) {
+    const items = upcoming
+      .map((d: { title: string; date: string }) => `- ${d.title} (${d.date})`)
+      .join("\n");
+    summary += `\nNext upcoming:\n${items}`;
+  }
+
+  return summary;
 }
 
 export async function runAgentLoop(
@@ -28,11 +76,11 @@ export async function runAgentLoop(
   context: ToolContext,
   res: Response
 ) {
-  const { anthropicApiKey } = getConfig();
-  const client = new Anthropic({ apiKey: anthropicApiKey });
+  const client = getAnthropicClient();
 
   const today = new Date().toISOString().split("T")[0];
-  const systemPrompt = `${SYSTEM_PROMPT}\nToday's date: ${today}`;
+  const contextSummary = await buildContextSummary(context);
+  const systemPrompt = `${SYSTEM_PROMPT}\nToday's date: ${today}${contextSummary}`;
 
   // Build the conversation messages for the Anthropic API
   let apiMessages: Anthropic.MessageParam[] = messages.map((m) => ({
@@ -42,6 +90,12 @@ export async function runAgentLoop(
 
   let aborted = false;
   res.on("close", () => {
+    aborted = true;
+  });
+
+  // Overall loop timeout (120 seconds)
+  const loopTimeout = AbortSignal.timeout(LOOP_TIMEOUT_MS);
+  loopTimeout.addEventListener("abort", () => {
     aborted = true;
   });
 
@@ -56,14 +110,6 @@ export async function runAgentLoop(
       tools: TOOL_DEFINITIONS,
     });
 
-    // Collect the full response for building the next turn
-    const toolUseBlocks: Array<{
-      id: string;
-      name: string;
-      input: Record<string, unknown>;
-    }> = [];
-    let hasToolUse = false;
-
     for await (const event of stream) {
       if (aborted) {
         stream.abort();
@@ -72,21 +118,13 @@ export async function runAgentLoop(
 
       if (event.type === "content_block_start") {
         if (event.content_block.type === "tool_use") {
-          hasToolUse = true;
           sendSSE(res, "tool_start", {
             tool: event.content_block.name,
-          });
-          toolUseBlocks.push({
-            id: event.content_block.id,
-            name: event.content_block.name,
-            input: {},
           });
         }
       } else if (event.type === "content_block_delta") {
         if (event.delta.type === "text_delta") {
           sendSSE(res, "text_delta", { text: event.delta.text });
-        } else if (event.delta.type === "input_json_delta") {
-          // Accumulate tool input JSON — we'll parse it from the final message
         }
       }
     }
@@ -94,15 +132,15 @@ export async function runAgentLoop(
     // Get the final message to extract complete tool inputs
     const finalMessage = await stream.finalMessage();
 
-    if (!hasToolUse || finalMessage.stop_reason === "end_turn") {
-      sendSSE(res, "done", {});
-      return;
-    }
-
     // Extract tool use blocks from the final message (has complete parsed input)
     const toolBlocks = finalMessage.content.filter(
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
     );
+
+    if (toolBlocks.length === 0 || finalMessage.stop_reason === "end_turn") {
+      sendSSE(res, "done", {});
+      return;
+    }
 
     // Add assistant message with full content to conversation
     apiMessages = [
@@ -110,41 +148,42 @@ export async function runAgentLoop(
       { role: "assistant" as const, content: finalMessage.content },
     ];
 
-    // Execute each tool and collect results
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const block of toolBlocks) {
-      if (aborted) return;
+    // Execute all tools in parallel and collect results
+    const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+      toolBlocks.map(async (block) => {
+        try {
+          const result = await executeTool(
+            block.name,
+            block.input as Record<string, unknown>,
+            context
+          );
+          sendSSE(res, "tool_result", {
+            tool: block.name,
+            result: JSON.parse(result),
+          });
+          return {
+            type: "tool_result" as const,
+            tool_use_id: block.id,
+            content: result,
+          };
+        } catch (err) {
+          const errorMsg =
+            err instanceof Error ? err.message : "Tool execution failed";
+          sendSSE(res, "tool_result", {
+            tool: block.name,
+            error: errorMsg,
+          });
+          return {
+            type: "tool_result" as const,
+            tool_use_id: block.id,
+            content: JSON.stringify({ error: errorMsg }),
+            is_error: true as const,
+          };
+        }
+      })
+    );
 
-      try {
-        const result = await executeTool(
-          block.name,
-          block.input as Record<string, unknown>,
-          context
-        );
-        sendSSE(res, "tool_result", {
-          tool: block.name,
-          result: JSON.parse(result),
-        });
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: result,
-        });
-      } catch (err) {
-        const errorMsg =
-          err instanceof Error ? err.message : "Tool execution failed";
-        sendSSE(res, "tool_result", {
-          tool: block.name,
-          error: errorMsg,
-        });
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify({ error: errorMsg }),
-          is_error: true,
-        });
-      }
-    }
+    if (aborted) return;
 
     // Add tool results as user message
     apiMessages = [

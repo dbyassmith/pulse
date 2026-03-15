@@ -96,8 +96,8 @@ struct ChatView: View {
             }
             .id(message.id)
         } else {
-            Text(LocalizedStringKey(message.content))
-                .tint(.orange)
+            // Plain text rendering for assistant messages to prevent phishing via Markdown links
+            Text(message.content)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .id(message.id)
         }

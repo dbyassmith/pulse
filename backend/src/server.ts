@@ -1,13 +1,38 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
 import { getConfig } from "./lib/config.js";
 import { createAuthenticatedClient } from "./lib/supabase.js";
 import { runAgentLoop } from "./agent/loop.js";
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim());
+
+app.use(helmet());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: "1mb" }));
+
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+});
+
+const ChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(32_000),
+});
+
+const ChatRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema).min(1).max(100),
+});
 
 app.get("/health", async (_req, res) => {
   try {
@@ -24,11 +49,12 @@ app.get("/health", async (_req, res) => {
       supabaseBody: body.slice(0, 200),
     });
   } catch (err) {
-    res.json({ status: "error", error: String(err) });
+    console.error("Health check error:", err);
+    res.json({ status: "error", error: "Health check failed" });
   }
 });
 
-app.post("/chat", async (req, res) => {
+app.post("/chat", chatLimiter, async (req, res) => {
   // Extract auth token
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -39,12 +65,6 @@ app.post("/chat", async (req, res) => {
   const accessToken = authHeader.slice(7);
 
   // Create authenticated Supabase client
-  const { supabaseUrl, supabaseAnonKey } = getConfig();
-  console.log("Supabase config:", {
-    url: supabaseUrl,
-    keyLength: supabaseAnonKey.length,
-    keyValue: supabaseAnonKey,
-  });
   const supabase = createAuthenticatedClient(accessToken);
 
   // Validate the token by passing it directly to getUser
@@ -59,12 +79,13 @@ app.post("/chat", async (req, res) => {
     return;
   }
 
-  // Validate request body
-  const { messages } = req.body;
-  if (!Array.isArray(messages) || messages.length === 0) {
-    res.status(400).json({ error: "messages must be a non-empty array" });
+  // Validate request body with Zod (before setting SSE headers)
+  const parsed = ChatRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
     return;
   }
+  const { messages } = parsed.data;
 
   // Set up SSE response
   res.setHeader("Content-Type", "text/event-stream");
@@ -75,8 +96,8 @@ app.post("/chat", async (req, res) => {
   try {
     await runAgentLoop(messages, { supabase, userId: user.id }, res);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    res.write(`event: error\ndata: ${JSON.stringify({ message })}\n\n`);
+    console.error("Chat error:", err);
+    res.write(`event: error\ndata: ${JSON.stringify({ message: "Internal server error" })}\n\n`);
     res.write(`event: done\ndata: {}\n\n`);
   }
 

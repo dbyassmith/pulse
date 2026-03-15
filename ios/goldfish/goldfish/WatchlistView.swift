@@ -4,6 +4,7 @@ struct WatchlistView: View {
     @State private var selectedItem: WatchlistItem?
     var selectedCategory: String?
     var onCategoriesChanged: (([String]) -> Void)?
+    var refreshToken = UUID()
     @State private var items: [WatchlistItem] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -60,6 +61,9 @@ struct WatchlistView: View {
         }
         .refreshable {
             await loadItems()
+        }
+        .onChange(of: refreshToken) {
+            Task { await loadItems() }
         }
         .alert("Error", isPresented: $showErrorAlert) {
             Button("OK", role: .cancel) {}

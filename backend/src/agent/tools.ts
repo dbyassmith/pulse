@@ -1,5 +1,14 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
+export const EVENT_CATEGORIES = [
+  "tech", "sports", "entertainment", "gaming", "birthday",
+  "travel", "personal", "business", "holiday", "politics", "local",
+] as const;
+
+export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+
+const categoryList = EVENT_CATEGORIES.join(", ");
+
 export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
     name: "search_for_date",
@@ -48,7 +57,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+            `Event category: ${categoryList}`,
         },
         subcategory: {
           type: "string",
@@ -85,7 +94,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Event category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+            `Event category: ${categoryList}`,
         },
         subcategory: {
           type: "string",
@@ -110,7 +119,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+            `Filter by category: ${categoryList}`,
         },
         include_past: {
           type: "boolean",
@@ -138,7 +147,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
         category: {
           type: "string",
           description:
-            "Filter by category: tech, sports, entertainment, gaming, birthday, travel, personal, business, holiday, politics, local",
+            `Filter by category: ${categoryList}`,
         },
         status: {
           type: "string",

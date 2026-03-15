@@ -18,9 +18,18 @@ Rules:
 - "title" is the event name as you understand it from the search results.
 - "notes" is a brief summary of findings. For multi-day events, include the full date range here. If no date was found, explain why (e.g., "Only a month was mentioned", "No date announced yet").`;
 
-export async function searchForDate(query: string): Promise<DateSearchResult> {
-  const { anthropicApiKey } = getConfig();
+// Module-scope singleton Anthropic client (lazy-initialized)
+let anthropicClient: Anthropic | null = null;
 
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    const { anthropicApiKey } = getConfig();
+    anthropicClient = new Anthropic({ apiKey: anthropicApiKey });
+  }
+  return anthropicClient;
+}
+
+export async function searchForDate(query: string): Promise<DateSearchResult> {
   const braveResult = await queryBraveAnswers(query);
 
   if (!braveResult.answer) {
@@ -40,14 +49,18 @@ export async function searchForDate(query: string): Promise<DateSearchResult> {
         .join("\n")
     : "No citations provided.";
 
+  // Wrap untrusted search content in XML delineation tags to mitigate prompt injection
   const userMessage = `Search answer for "${query}":
 
+<search_results>
 ${braveResult.answer}
+</search_results>
 
-Sources:
-${citationSummary}`;
+<search_citations>
+${citationSummary}
+</search_citations>`;
 
-  const client = new Anthropic({ apiKey: anthropicApiKey });
+  const client = getAnthropicClient();
 
   const message = await client.messages.parse({
     model: "claude-sonnet-4-6",

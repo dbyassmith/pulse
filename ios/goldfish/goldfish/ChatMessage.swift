@@ -4,7 +4,6 @@ struct ChatMessage: Identifiable {
     let id = UUID()
     var role: Role
     var content: String
-    var toolStatus: ToolStatus?
 
     enum Role {
         case user
