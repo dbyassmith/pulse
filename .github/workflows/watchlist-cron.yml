@@ -1,0 +1,44 @@
+name: Watchlist Cron
+
+# Runs the server-side watchlist sweep once a day. The sweep walks every
+# active watchlist_items row across all users, calls the backend's Brave +
+# Claude date search, and promotes confirmed matches into confirmed_dates.
+#
+# Requires two repository configs:
+#   - secret:   CRON_SECRET  (must match the backend's CRON_SECRET env var;
+#                             32+ characters)
+#   - variable: BACKEND_URL  (origin of the deployed backend, no trailing slash)
+#
+# Manual runs are supported via the "Run workflow" button in the Actions tab.
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # 09:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  run:
+    name: Trigger watchlist sweep
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /cron/run-watchlist
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BACKEND_URL:-}" ]; then
+            echo "BACKEND_URL repository variable is not set." >&2
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "CRON_SECRET repository secret is not set." >&2
+            exit 1
+          fi
+          curl -sS --fail-with-body --max-time 300 \
+            -X POST "${BACKEND_URL}/cron/run-watchlist" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -o response.json \
+            -w "HTTP %{http_code} in %{time_total}s\n"
+          echo "--- Summary ---"
+          cat response.json

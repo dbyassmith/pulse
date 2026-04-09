@@ -5,7 +5,9 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { getConfig } from "./lib/config.js";
 import { createAuthenticatedClient } from "./lib/supabase.js";
+import { verifyCronSecret } from "./lib/cron-auth.js";
 import { runAgentLoop } from "./agent/loop.js";
+import { runWatchlistSweep } from "./watchlist-runner.js";
 
 const app = express();
 
@@ -25,6 +27,14 @@ const chatLimiter = rateLimit({
   message: { error: "Too many requests, please try again later" },
 });
 
+const cronLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many cron requests" },
+});
+
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().min(1).max(32_000),
@@ -32,6 +42,23 @@ const ChatMessageSchema = z.object({
 
 const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(100),
+});
+
+app.post("/cron/run-watchlist", cronLimiter, async (req, res) => {
+  const { cronSecret } = getConfig();
+  if (!verifyCronSecret(req.headers.authorization, cronSecret)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const summary = await runWatchlistSweep();
+    console.log(JSON.stringify({ kind: "watchlist-run", ...summary }));
+    res.json(summary);
+  } catch (err) {
+    console.error("Watchlist run error:", err);
+    res.status(500).json({ error: "Watchlist run failed" });
+  }
 });
 
 app.get("/health", async (_req, res) => {

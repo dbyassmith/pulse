@@ -14,7 +14,13 @@ export function getConfig() {
   const braveApiKey = process.env.BRAVE_API_KEY;
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const cronSecret = process.env.CRON_SECRET;
   const port = parseInt(process.env.PORT || "3000", 10);
+
+  const cooldownRaw = process.env.WATCHLIST_CHECK_COOLDOWN_HOURS;
+  const watchlistCheckCooldownHours =
+    cooldownRaw === undefined || cooldownRaw === "" ? 20 : Number(cooldownRaw);
 
   if (!anthropicApiKey) {
     throw new Error("ANTHROPIC_API_KEY environment variable is not set.");
@@ -32,5 +38,32 @@ export function getConfig() {
     throw new Error("SUPABASE_ANON_KEY environment variable is not set.");
   }
 
-  return { anthropicApiKey, braveApiKey, supabaseUrl, supabaseAnonKey, port };
+  if (!supabaseServiceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY environment variable is not set.");
+  }
+
+  if (!cronSecret) {
+    throw new Error("CRON_SECRET environment variable is not set.");
+  }
+
+  if (cronSecret.length < 32) {
+    throw new Error("CRON_SECRET must be at least 32 characters long.");
+  }
+
+  if (!Number.isFinite(watchlistCheckCooldownHours) || watchlistCheckCooldownHours < 0) {
+    throw new Error(
+      "WATCHLIST_CHECK_COOLDOWN_HOURS must be a non-negative number."
+    );
+  }
+
+  return {
+    anthropicApiKey,
+    braveApiKey,
+    supabaseUrl,
+    supabaseAnonKey,
+    supabaseServiceRoleKey,
+    cronSecret,
+    watchlistCheckCooldownHours,
+    port,
+  };
 }

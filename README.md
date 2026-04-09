@@ -33,6 +33,27 @@ Watchlist items live in `agent/watchlist/` and resolved items move to `agent/res
 
 A SwiftUI app with a home screen widget that displays upcoming confirmed dates. Connects to the same Supabase backend.
 
+### Backend (`backend/`)
+
+An Express server exposing `/chat` (authenticated conversational agent) and `/cron/run-watchlist` (server-side watchlist sweep). Runs from the included `Dockerfile`.
+
+#### Watchlist cron
+
+`.github/workflows/watchlist-cron.yml` triggers the sweep once a day at 09:00 UTC (and on manual `workflow_dispatch`). It POSTs to `${BACKEND_URL}/cron/run-watchlist` with a shared secret. The sweep walks every active `watchlist_items` row, calls the Brave + Claude date search primitive for each, and promotes confirmed matches into `confirmed_dates`.
+
+Required repository settings for the workflow:
+
+- **Secret** `CRON_SECRET` — must match `CRON_SECRET` on the backend (32+ characters).
+- **Variable** `BACKEND_URL` — origin of the deployed backend, no trailing slash.
+
+Manual run: GitHub → Actions → "Watchlist Cron" → Run workflow. The response JSON summary is printed in the run log.
+
+To trigger locally:
+
+```bash
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/cron/run-watchlist
+```
+
 ## Setup
 
 1. Create a Supabase project and configure your dates table
