@@ -88,7 +88,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
             "category-watch",
           ],
           description:
-            "Event type. 'one-time' for single events (default). 'recurring' for events that repeat on any cadence, even if dates vary (WWDC, elections, Super Bowl). 'series' for multi-part events with many related dates (F1 season, concert tour) — when identified, each event in the series should become its own one-time item. 'category-watch' for ongoing category monitoring where you always want the next occurrence tracked ('next Apple event', 'next SpaceX launch').",
+            "Event type. 'one-time' for single events (default). 'recurring' for events that repeat on any cadence, even if dates vary (WWDC, elections, Super Bowl) — the title MUST be date-free (use 'WWDC' not 'WWDC 2026') because the runner reuses the title verbatim on every cycle to find the next occurrence. 'series' for multi-part events with many related dates (F1 season, concert tour) — when identified, each event in the series should become its own one-time item. 'category-watch' for ongoing category monitoring where you always want the next occurrence tracked ('next Apple event', 'next SpaceX launch').",
         },
         category: {
           type: "string",

@@ -6,15 +6,20 @@ import { getConfig } from "./lib/config.js";
 import type { DateSearchResult } from "./lib/types.js";
 
 type Confidence = "high" | "medium" | "low";
+type WatchlistType = "one-time" | "recurring" | "series" | "category-watch";
 
 interface WatchlistItemRow {
   id: string;
   user_id: string;
   title: string;
+  type: WatchlistType;
   category: string | null;
   subcategory: string | null;
   confidence_threshold: Confidence | null;
+  known_next_date: string | null;
 }
+
+export type SweepAction = "resolved" | "scheduled" | "skipped" | "errored";
 
 export interface RunWatchlistSweepOptions {
   now?: Date;
@@ -28,7 +33,7 @@ export interface RunWatchlistSweepOptions {
 
 export interface SweepItemResult {
   id: string;
-  action: "resolved" | "skipped" | "errored";
+  action: SweepAction;
   result?: DateSearchResult;
   error?: string;
 }
@@ -36,6 +41,7 @@ export interface SweepItemResult {
 export interface SweepSummary {
   scanned: number;
   resolved: number;
+  scheduled: number;
   skipped: number;
   errored: number;
   items: SweepItemResult[];
@@ -47,6 +53,12 @@ const CONFIDENCE_RANK: Record<Confidence, number> = {
   medium: 2,
   low: 1,
 };
+
+// Postgres unique_violation error code — raised by the confirmed_dates
+// (user_id, title, date) unique constraint when the runner tries to insert
+// a row that already exists (e.g. reactivated recurring item re-finds the
+// same still-valid upcoming date before a newer one is announced).
+const PG_UNIQUE_VIOLATION = "23505";
 
 function meetsThreshold(
   resultConfidence: Confidence | null,
@@ -75,6 +87,10 @@ function normalizeCategory(raw: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function toDateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 export async function runWatchlistSweep(
   options: RunWatchlistSweepOptions = {}
 ): Promise<SweepSummary> {
@@ -90,12 +106,24 @@ export async function runWatchlistSweep(
   const cooldownCutoff = new Date(
     now.getTime() - cooldownHours * 60 * 60 * 1000
   ).toISOString();
+  const todayDateOnly = toDateOnly(now);
 
+  // Eligibility: status = 'active' AND (cooldown elapsed OR never checked)
+  // AND (known_next_date is null OR known_next_date is in the past).
+  //
+  // Two chained .or() calls are AND-combined by PostgREST (each chained
+  // method call adds an AND filter), so this produces:
+  //   status = 'active'
+  //   AND (last_checked_at IS NULL OR last_checked_at < cooldownCutoff)
+  //   AND (known_next_date IS NULL OR known_next_date < today)
   const { data: rows, error: selectError } = await supabase
     .from("watchlist_items")
-    .select("id, user_id, title, category, subcategory, confidence_threshold")
+    .select(
+      "id, user_id, title, type, category, subcategory, confidence_threshold, known_next_date"
+    )
     .eq("status", "active")
     .or(`last_checked_at.is.null,last_checked_at.lt.${cooldownCutoff}`)
+    .or(`known_next_date.is.null,known_next_date.lt.${todayDateOnly}`)
     .order("last_checked_at", { ascending: true, nullsFirst: true })
     .limit(limit);
 
@@ -106,12 +134,15 @@ export async function runWatchlistSweep(
   const items: SweepItemResult[] = [];
   let scanned = 0;
   let resolved = 0;
+  let scheduled = 0;
   let skipped = 0;
   let errored = 0;
 
   const eligible = (rows ?? []) as WatchlistItemRow[];
   const total = eligible.length;
-  console.log(`[watchlist-runner] loaded ${total} eligible item(s) (cooldown=${cooldownHours}h, limit=${limit})`);
+  console.log(
+    `[watchlist-runner] loaded ${total} eligible item(s) (cooldown=${cooldownHours}h, limit=${limit})`
+  );
 
   for (const item of eligible) {
     scanned++;
@@ -119,8 +150,40 @@ export async function runWatchlistSweep(
       await sleep(interItemDelayMs);
     }
 
+    // Reactivation: if this item had a known upcoming date that has now
+    // passed, clear known_next_date before searching. The eligibility query
+    // already ensures we only see items where known_next_date < today, so
+    // any non-null value here means "this recurring item's previous
+    // occurrence has happened; look for the next one."
+    if (item.known_next_date !== null) {
+      console.log(
+        `[watchlist-runner] [${scanned}/${total}] reactivating: ${item.title} (previous date=${item.known_next_date})`
+      );
+      const { error: clearError } = await supabase
+        .from("watchlist_items")
+        .update({
+          known_next_date: null,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", item.id);
+      if (clearError) {
+        console.error(
+          `[watchlist-runner] [${scanned}/${total}] failed to clear known_next_date for ${item.title}: ${clearError.message}`
+        );
+        errored++;
+        items.push({
+          id: item.id,
+          action: "errored",
+          error: `failed to clear known_next_date: ${clearError.message}`,
+        });
+        continue;
+      }
+    }
+
     const query = buildQuery(item);
-    console.log(`[watchlist-runner] [${scanned}/${total}] searching: "${query}" (id=${item.id})`);
+    console.log(
+      `[watchlist-runner] [${scanned}/${total}] searching: "${query}" (id=${item.id})`
+    );
 
     let result: DateSearchResult;
     try {
@@ -128,7 +191,9 @@ export async function runWatchlistSweep(
     } catch (err) {
       // Do NOT update last_checked_at — let the next run retry this item.
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[watchlist-runner] [${scanned}/${total}] errored: ${item.title} — ${msg}`);
+      console.warn(
+        `[watchlist-runner] [${scanned}/${total}] errored: ${item.title} — ${msg}`
+      );
       errored++;
       items.push({
         id: item.id,
@@ -138,13 +203,16 @@ export async function runWatchlistSweep(
       continue;
     }
 
-    const hasUsableDate = result.found && typeof result.date === "string" && result.date.length > 0;
-    const isMatch = hasUsableDate && meetsThreshold(result.confidence, item.confidence_threshold);
+    const hasUsableDate =
+      result.found && typeof result.date === "string" && result.date.length > 0;
+    const isMatch =
+      hasUsableDate && meetsThreshold(result.confidence, item.confidence_threshold);
 
     if (isMatch && result.date && result.confidence) {
       console.log(
         `[watchlist-runner] [${scanned}/${total}] match: ${item.title} → ${result.date} (confidence=${result.confidence})`
       );
+
       // 1. Insert into confirmed_dates (same column layout as executeAddConfirmedDate)
       const confirmedId = crypto.randomUUID();
       const { error: insertError } = await supabase.from("confirmed_dates").insert({
@@ -160,6 +228,39 @@ export async function runWatchlistSweep(
       });
 
       if (insertError) {
+        // Unique-violation on (user_id, title, date) means the date we found
+        // is already on file — no new information. Refresh cooldown metadata
+        // but leave known_next_date and status alone so the item isn't
+        // re-searched until the cooldown elapses.
+        const errCode = (insertError as { code?: string }).code;
+        if (errCode === PG_UNIQUE_VIOLATION) {
+          console.log(
+            `[watchlist-runner] [${scanned}/${total}] duplicate confirmed_date for ${item.title} — refreshing cooldown only`
+          );
+          const { error: cooldownError } = await supabase
+            .from("watchlist_items")
+            .update({
+              last_checked_at: now.toISOString(),
+              last_search_found: true,
+              last_search_notes: result.notes ?? null,
+              updated_at: now.toISOString(),
+            })
+            .eq("id", item.id);
+          if (cooldownError) {
+            errored++;
+            items.push({
+              id: item.id,
+              action: "errored",
+              error: `cooldown refresh failed after duplicate: ${cooldownError.message}`,
+              result,
+            });
+            continue;
+          }
+          skipped++;
+          items.push({ id: item.id, action: "skipped", result });
+          continue;
+        }
+
         console.error(
           `[watchlist-runner] [${scanned}/${total}] confirmed_dates insert failed for ${item.title}: ${insertError.message}`
         );
@@ -173,7 +274,48 @@ export async function runWatchlistSweep(
         continue;
       }
 
-      // 2. Mark watchlist item resolved + record check metadata
+      // 2. Update the watchlist row. Behavior branches by type.
+      if (item.type === "recurring") {
+        // Recurring items stay visible. Store the known upcoming date so
+        // the eligibility query excludes this item until the date passes.
+        const { error: updateError } = await supabase
+          .from("watchlist_items")
+          .update({
+            known_next_date: result.date,
+            last_checked_at: now.toISOString(),
+            last_search_found: true,
+            last_search_notes: result.notes ?? null,
+            updated_at: now.toISOString(),
+          })
+          .eq("id", item.id);
+
+        if (updateError) {
+          console.error(
+            `[watchlist-runner] [${scanned}/${total}] PARTIAL-WRITE: confirmed_dates id=${confirmedId} created but watchlist schedule failed for ${item.title}: ${updateError.message}`
+          );
+          errored++;
+          items.push({
+            id: item.id,
+            action: "errored",
+            error: `confirmed_dates inserted (id=${confirmedId}) but watchlist schedule failed: ${updateError.message}`,
+            result,
+          });
+          continue;
+        }
+
+        console.log(
+          `[watchlist-runner] [${scanned}/${total}] scheduled: ${item.title} → ${result.date} (recurring, stays visible)`
+        );
+        scheduled++;
+        items.push({ id: item.id, action: "scheduled", result });
+        continue;
+      }
+
+      // one-time / series / category-watch: current resolve-and-stop behavior.
+      // TODO(follow-on): series should fan out into one-time children for
+      // each event in the series. category-watch should spawn a fresh watch
+      // for the next occurrence immediately on confirmation. Both are
+      // deferred to follow-on plans; in v1 they behave like one-time.
       const { error: updateError } = await supabase
         .from("watchlist_items")
         .update({
@@ -186,7 +328,6 @@ export async function runWatchlistSweep(
         .eq("id", item.id);
 
       if (updateError) {
-        // Partial-write hazard: confirmed_dates row exists but watchlist still active.
         console.error(
           `[watchlist-runner] [${scanned}/${total}] PARTIAL-WRITE: confirmed_dates id=${confirmedId} created but watchlist update failed for ${item.title}: ${updateError.message}`
         );
@@ -212,7 +353,9 @@ export async function runWatchlistSweep(
       : !hasUsableDate
         ? "no usable date"
         : `below threshold (got=${result.confidence}, need=${item.confidence_threshold ?? "medium"})`;
-    console.log(`[watchlist-runner] [${scanned}/${total}] skipped: ${item.title} — ${reason}`);
+    console.log(
+      `[watchlist-runner] [${scanned}/${total}] skipped: ${item.title} — ${reason}`
+    );
 
     const { error: updateError } = await supabase
       .from("watchlist_items")
@@ -243,12 +386,13 @@ export async function runWatchlistSweep(
   }
 
   console.log(
-    `[watchlist-runner] sweep complete: scanned=${scanned}, resolved=${resolved}, skipped=${skipped}, errored=${errored}`
+    `[watchlist-runner] sweep complete: scanned=${scanned}, resolved=${resolved}, scheduled=${scheduled}, skipped=${skipped}, errored=${errored}`
   );
 
   return {
     scanned,
     resolved,
+    scheduled,
     skipped,
     errored,
     items,

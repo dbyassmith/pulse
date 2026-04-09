@@ -8,7 +8,8 @@ import type { DateSearchResult } from "../lib/types.js";
  *   from('watchlist_items')
  *     .select(columns)
  *     .eq('status', 'active')
- *     .or(orExpr)
+ *     .or(orExpr)          (cooldown filter)
+ *     .or(orExpr)          (known_next_date filter — second call)
  *     .order(col, { ascending, nullsFirst })
  *     .limit(n)
  *   → { data, error }
@@ -22,10 +23,12 @@ type WatchRow = {
   id: string;
   user_id: string;
   title: string;
+  type: "one-time" | "recurring" | "series" | "category-watch";
   category: string | null;
   subcategory: string | null;
   confidence_threshold: "high" | "medium" | "low" | null;
   last_checked_at: string | null;
+  known_next_date: string | null;
 };
 
 type InsertCall = { table: string; row: Record<string, unknown> };
@@ -34,14 +37,14 @@ type UpdateCall = { table: string; patch: Record<string, unknown>; id: string };
 interface FakeOptions {
   selectRows: WatchRow[];
   selectError?: { message: string } | null;
-  insertErrorFor?: (row: Record<string, unknown>) => { message: string } | null;
+  insertErrorFor?: (row: Record<string, unknown>) => { message?: string; code?: string } | null;
   updateErrorFor?: (id: string, patch: Record<string, unknown>) => { message: string } | null;
 }
 
 function createFakeSupabase(opts: FakeOptions) {
   const inserts: InsertCall[] = [];
   const updates: UpdateCall[] = [];
-  let lastSelectFilter: { orExpr?: string; limit?: number } = {};
+  const lastSelectFilter: { orExprs: string[]; limit?: number } = { orExprs: [] };
 
   const client = {
     from(table: string) {
@@ -54,7 +57,7 @@ function createFakeSupabase(opts: FakeOptions) {
                 return chain;
               },
               or(expr: string) {
-                lastSelectFilter.orExpr = expr;
+                lastSelectFilter.orExprs.push(expr);
                 return chain;
               },
               order(_col: string, _opts: unknown) {
@@ -104,10 +107,12 @@ function makeItem(partial: Partial<WatchRow> = {}): WatchRow {
     id: partial.id ?? "item-1",
     user_id: partial.user_id ?? "user-1",
     title: partial.title ?? "WWDC 2026",
+    type: partial.type ?? "one-time",
     category: partial.category ?? "tech",
     subcategory: partial.subcategory ?? null,
     confidence_threshold: partial.confidence_threshold ?? null,
     last_checked_at: partial.last_checked_at ?? null,
+    known_next_date: partial.known_next_date ?? null,
   };
 }
 
@@ -142,8 +147,8 @@ beforeEach(() => {
 });
 
 describe("runWatchlistSweep", () => {
-  it("happy path — single match at default threshold resolves the item", async () => {
-    const item = makeItem();
+  it("happy path — one-time match at default threshold resolves the item", async () => {
+    const item = makeItem({ type: "one-time" });
     const fake = createFakeSupabase({ selectRows: [item] });
     const searchFn = vi.fn(async () => makeSearchResult({ confidence: "medium" }));
 
@@ -155,6 +160,7 @@ describe("runWatchlistSweep", () => {
 
     expect(summary.scanned).toBe(1);
     expect(summary.resolved).toBe(1);
+    expect(summary.scheduled).toBe(0);
     expect(summary.skipped).toBe(0);
     expect(summary.errored).toBe(0);
 
@@ -167,6 +173,108 @@ describe("runWatchlistSweep", () => {
     expect(fake.updates).toHaveLength(1);
     expect(fake.updates[0]?.patch.status).toBe("resolved");
     expect(fake.updates[0]?.patch.last_search_found).toBe(true);
+  });
+
+  it("happy path — recurring match schedules the item without changing status", async () => {
+    const item = makeItem({ id: "wwdc", title: "WWDC", type: "recurring" });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () => makeSearchResult({ date: "2026-06-09", confidence: "high" }));
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      interItemDelayMs: 0,
+    });
+
+    expect(summary.scanned).toBe(1);
+    expect(summary.resolved).toBe(0);
+    expect(summary.scheduled).toBe(1);
+    expect(summary.skipped).toBe(0);
+    expect(summary.errored).toBe(0);
+
+    // confirmed_dates insert still happens
+    expect(fake.inserts).toHaveLength(1);
+    expect(fake.inserts[0]?.row.date).toBe("2026-06-09");
+
+    // watchlist_items update must NOT set status to resolved.
+    expect(fake.updates).toHaveLength(1);
+    const patch = fake.updates[0]?.patch ?? {};
+    expect(patch.status).toBeUndefined();
+    expect(patch.known_next_date).toBe("2026-06-09");
+    expect(patch.last_search_found).toBe(true);
+
+    expect(summary.items[0]?.action).toBe("scheduled");
+  });
+
+  it("recurring match does not accidentally store the old known_next_date", async () => {
+    // Item has a stale known_next_date from a previous cycle (already in the past).
+    const item = makeItem({
+      id: "wwdc",
+      title: "WWDC",
+      type: "recurring",
+      known_next_date: "2025-06-09",
+    });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () => makeSearchResult({ date: "2026-06-09", confidence: "high" }));
+
+    await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      interItemDelayMs: 0,
+    });
+
+    // First update clears known_next_date (the reactivation step).
+    // Second update writes the new known_next_date from the match.
+    expect(fake.updates.length).toBeGreaterThanOrEqual(2);
+    const clearPatch = fake.updates[0]?.patch ?? {};
+    expect(clearPatch.known_next_date).toBeNull();
+
+    const schedulePatch = fake.updates[fake.updates.length - 1]?.patch ?? {};
+    expect(schedulePatch.known_next_date).toBe("2026-06-09");
+  });
+
+  it("reactivation: items with known_next_date in the past get cleared before search", async () => {
+    const item = makeItem({
+      id: "wwdc",
+      title: "WWDC",
+      type: "recurring",
+      known_next_date: "2025-06-09",
+    });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () =>
+      makeSearchResult({ found: false, date: null, confidence: null, source: null, notes: "no date yet" })
+    );
+
+    await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      interItemDelayMs: 0,
+    });
+
+    // The very first update on this item must be the known_next_date clear,
+    // and it must happen BEFORE searchFn is called.
+    expect(fake.updates[0]?.patch.known_next_date).toBeNull();
+    expect(searchFn).toHaveBeenCalled();
+  });
+
+  it("eligibility query includes both cooldown and known_next_date filters", async () => {
+    const fake = createFakeSupabase({ selectRows: [] });
+    const fixedNow = new Date("2026-04-09T12:00:00.000Z");
+
+    await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn: vi.fn(),
+      now: fixedNow,
+      cooldownHours: 20,
+      interItemDelayMs: 0,
+    });
+
+    // Two chained .or() calls should have been made: one for cooldown, one for known_next_date.
+    expect(fake.lastSelectFilter.orExprs).toHaveLength(2);
+    expect(fake.lastSelectFilter.orExprs[0]).toContain("last_checked_at.is.null");
+    expect(fake.lastSelectFilter.orExprs[0]).toContain("2026-04-08T16:00:00.000Z");
+    expect(fake.lastSelectFilter.orExprs[1]).toContain("known_next_date.is.null");
+    expect(fake.lastSelectFilter.orExprs[1]).toContain("2026-04-09");
   });
 
   it("happy path — no match just records last_checked_at and leaves status active", async () => {
@@ -184,6 +292,7 @@ describe("runWatchlistSweep", () => {
 
     expect(summary.scanned).toBe(1);
     expect(summary.resolved).toBe(0);
+    expect(summary.scheduled).toBe(0);
     expect(summary.skipped).toBe(1);
     expect(summary.errored).toBe(0);
 
@@ -254,24 +363,6 @@ describe("runWatchlistSweep", () => {
     expect(fake.lastSelectFilter.limit).toBe(5);
   });
 
-  it("builds the cooldown filter using the supplied `now` and cooldownHours", async () => {
-    const item = makeItem();
-    const fake = createFakeSupabase({ selectRows: [item] });
-    const fixedNow = new Date("2026-04-09T12:00:00.000Z");
-
-    await runWatchlistSweep({
-      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
-      searchFn: vi.fn(async () => makeSearchResult({ found: false, date: null, confidence: null, source: null })),
-      now: fixedNow,
-      cooldownHours: 20,
-      interItemDelayMs: 0,
-    });
-
-    // 20 hours before fixedNow = 2026-04-08T16:00:00.000Z
-    expect(fake.lastSelectFilter.orExpr).toContain("last_checked_at.is.null");
-    expect(fake.lastSelectFilter.orExpr).toContain("2026-04-08T16:00:00.000Z");
-  });
-
   it("returns cleanly when zero items are eligible", async () => {
     const fake = createFakeSupabase({ selectRows: [] });
     const searchFn = vi.fn();
@@ -285,6 +376,7 @@ describe("runWatchlistSweep", () => {
     expect(summary).toMatchObject({
       scanned: 0,
       resolved: 0,
+      scheduled: 0,
       skipped: 0,
       errored: 0,
       items: [],
@@ -319,11 +411,11 @@ describe("runWatchlistSweep", () => {
     expect(summary.items.find((i) => i.id === "bad")?.error).toContain("Brave rate-limited");
   });
 
-  it("records an errored item when confirmed_dates insert fails", async () => {
+  it("records an errored item when confirmed_dates insert fails with a non-unique-violation error", async () => {
     const item = makeItem();
     const fake = createFakeSupabase({
       selectRows: [item],
-      insertErrorFor: () => ({ message: "unique violation" }),
+      insertErrorFor: () => ({ message: "connection reset", code: "08000" }),
     });
 
     const summary = await runWatchlistSweep({
@@ -334,9 +426,43 @@ describe("runWatchlistSweep", () => {
 
     expect(summary.errored).toBe(1);
     expect(summary.resolved).toBe(0);
-    // Watchlist update should NOT have been attempted after a failed insert.
+    // Watchlist update should NOT have been attempted after a non-unique-violation insert failure.
     expect(fake.updates).toHaveLength(0);
-    expect(summary.items[0]?.error).toContain("unique violation");
+    expect(summary.items[0]?.error).toContain("connection reset");
+  });
+
+  it("treats confirmed_dates unique-violation (23505) as skipped, refreshes cooldown only", async () => {
+    const item = makeItem({ id: "wwdc", title: "WWDC", type: "recurring" });
+    const fake = createFakeSupabase({
+      selectRows: [item],
+      insertErrorFor: () => ({ message: "duplicate key", code: "23505" }),
+    });
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn: vi.fn(async () => makeSearchResult({ date: "2026-06-09", confidence: "high" })),
+      interItemDelayMs: 0,
+    });
+
+    // Insert was attempted and rejected
+    expect(fake.inserts).toHaveLength(1);
+
+    // Expected counts
+    expect(summary.scanned).toBe(1);
+    expect(summary.resolved).toBe(0);
+    expect(summary.scheduled).toBe(0);
+    expect(summary.skipped).toBe(1);
+    expect(summary.errored).toBe(0);
+
+    // A cooldown-refresh update was made. It must NOT set status, known_next_date, or clear it.
+    expect(fake.updates).toHaveLength(1);
+    const patch = fake.updates[0]?.patch ?? {};
+    expect(patch.status).toBeUndefined();
+    expect(patch.known_next_date).toBeUndefined();
+    expect(patch.last_checked_at).toBeTruthy();
+    expect(patch.last_search_found).toBe(true);
+
+    expect(summary.items[0]?.action).toBe("skipped");
   });
 
   it("records errored state when insert succeeds but watchlist update fails (partial-write hazard)", async () => {
@@ -362,16 +488,48 @@ describe("runWatchlistSweep", () => {
     expect(erroredItem?.result).toBeDefined();
   });
 
-  it("integration scenario — three items: one match, one miss, one error", async () => {
-    const matchItem = makeItem({ id: "match", title: "WWDC 2026" });
-    const missItem = makeItem({ id: "miss", title: "iPhone 18" });
-    const errorItem = makeItem({ id: "err", title: "Error Event" });
+  it("series items still resolve (v1 — follow-on plan will change this)", async () => {
+    const item = makeItem({ id: "f1", title: "F1 2026 Season", type: "series" });
+    const fake = createFakeSupabase({ selectRows: [item] });
 
-    const fake = createFakeSupabase({ selectRows: [matchItem, missItem, errorItem] });
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn: vi.fn(async () => makeSearchResult({ confidence: "high" })),
+      interItemDelayMs: 0,
+    });
+
+    expect(summary.resolved).toBe(1);
+    expect(summary.scheduled).toBe(0);
+    expect(fake.updates[0]?.patch.status).toBe("resolved");
+  });
+
+  it("category-watch items still resolve (v1 — follow-on plan will change this)", async () => {
+    const item = makeItem({ id: "apple", title: "next Apple event", type: "category-watch" });
+    const fake = createFakeSupabase({ selectRows: [item] });
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn: vi.fn(async () => makeSearchResult({ confidence: "high" })),
+      interItemDelayMs: 0,
+    });
+
+    expect(summary.resolved).toBe(1);
+    expect(summary.scheduled).toBe(0);
+    expect(fake.updates[0]?.patch.status).toBe("resolved");
+  });
+
+  it("integration scenario — four items: one-time match, recurring match, miss, error", async () => {
+    const oneTimeItem = makeItem({ id: "onetime", title: "iPhone 18 Launch", type: "one-time" });
+    const recurringItem = makeItem({ id: "rec", title: "WWDC", type: "recurring" });
+    const missItem = makeItem({ id: "miss", title: "iPhone 19", type: "one-time" });
+    const errorItem = makeItem({ id: "err", title: "Error Event", type: "one-time" });
+
+    const fake = createFakeSupabase({ selectRows: [oneTimeItem, recurringItem, missItem, errorItem] });
 
     const searchFn = vi.fn(async (query: string) => {
-      if (query.includes("WWDC")) return makeSearchResult({ confidence: "medium" });
-      if (query.includes("iPhone"))
+      if (query.includes("iPhone 18")) return makeSearchResult({ confidence: "medium", date: "2026-09-15" });
+      if (query.includes("WWDC")) return makeSearchResult({ confidence: "high", date: "2026-06-09" });
+      if (query.includes("iPhone 19"))
         return makeSearchResult({ found: false, date: null, confidence: null, source: null, notes: "no date yet" });
       throw new Error("boom");
     });
@@ -382,12 +540,18 @@ describe("runWatchlistSweep", () => {
       interItemDelayMs: 0,
     });
 
-    expect(summary.scanned).toBe(3);
+    expect(summary.scanned).toBe(4);
     expect(summary.resolved).toBe(1);
+    expect(summary.scheduled).toBe(1);
     expect(summary.skipped).toBe(1);
     expect(summary.errored).toBe(1);
 
     const byId = Object.fromEntries(summary.items.map((i) => [i.id, i.action]));
-    expect(byId).toEqual({ match: "resolved", miss: "skipped", err: "errored" });
+    expect(byId).toEqual({
+      onetime: "resolved",
+      rec: "scheduled",
+      miss: "skipped",
+      err: "errored",
+    });
   });
 });
