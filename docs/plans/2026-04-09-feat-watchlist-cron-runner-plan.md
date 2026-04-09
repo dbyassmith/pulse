@@ -1,7 +1,7 @@
 ---
 title: "feat: Server-side watchlist cron runner"
 type: feat
-status: active
+status: completed
 date: 2026-04-09
 ---
 
