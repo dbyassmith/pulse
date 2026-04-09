@@ -17,7 +17,8 @@ struct Provider: TimelineProvider {
         let dates = context.isPreview ? Self.sampleDates : SharedDefaults.read()
         let isDark = SharedDefaults.widgetDarkMode
         let showDate = SharedDefaults.widgetShowDate
-        completion(UpcomingEntry(date: Date(), upcomingDates: dates, isDarkMode: isDark, showDate: showDate))
+        let filtered = Self.filterUpcoming(dates, asOf: Date())
+        completion(UpcomingEntry(date: Date(), upcomingDates: filtered, isDarkMode: isDark, showDate: showDate))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UpcomingEntry>) -> Void) {
@@ -26,14 +27,15 @@ struct Provider: TimelineProvider {
         let showDate = SharedDefaults.widgetShowDate
         var entries: [UpcomingEntry] = []
 
-        entries.append(UpcomingEntry(date: Date(), upcomingDates: dates, isDarkMode: isDark, showDate: showDate))
+        let now = Date()
+        entries.append(UpcomingEntry(date: now, upcomingDates: Self.filterUpcoming(dates, asOf: now), isDarkMode: isDark, showDate: showDate))
 
         if let midnight = Calendar.current.nextDate(
-            after: Date(),
+            after: now,
             matching: DateComponents(hour: 0, minute: 0),
             matchingPolicy: .nextTime
         ) {
-            entries.append(UpcomingEntry(date: midnight, upcomingDates: dates, isDarkMode: isDark, showDate: showDate))
+            entries.append(UpcomingEntry(date: midnight, upcomingDates: Self.filterUpcoming(dates, asOf: midnight), isDarkMode: isDark, showDate: showDate))
         }
 
         let tomorrow9am = Calendar.current.nextDate(
@@ -44,6 +46,15 @@ struct Provider: TimelineProvider {
 
         let timeline = Timeline(entries: entries, policy: .after(tomorrow9am))
         completion(timeline)
+    }
+
+    private static func filterUpcoming(_ dates: [UpcomingDate], asOf referenceDate: Date) -> [UpcomingDate] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: referenceDate)
+        return dates.filter { item in
+            guard let parsed = item.parsedDate else { return true }
+            return calendar.startOfDay(for: parsed) >= today
+        }
     }
 
     private static let sampleDates: [UpcomingDate] = [
