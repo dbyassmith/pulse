@@ -209,6 +209,50 @@ export async function runWatchlistSweep(
       hasUsableDate && meetsThreshold(result.confidence, item.confidence_threshold);
 
     if (isMatch && result.date && result.confidence) {
+      // Stale-match guard for recurring items: if Brave returned a date
+      // that's already in the past, its index is pointing at the previous
+      // occurrence (not the next one). Scheduling a past date would put
+      // the item in an immediate reactivation loop — the eligibility
+      // query would pick it up again on the very next run, clear
+      // known_next_date, re-search, and hit the unique constraint.
+      // Treat the match as "no new info": refresh the cooldown so we
+      // don't retry within the same window, keep status='active' with
+      // known_next_date null, and wait for Brave's sources to catch up.
+      //
+      // For one-time items, a past date is still a legitimate (if late)
+      // resolve — the stale guard does not apply. Status flips to
+      // 'resolved' and the item leaves the eligibility set for good.
+      if (item.type === "recurring" && result.date < todayDateOnly) {
+        console.log(
+          `[watchlist-runner] [${scanned}/${total}] stale match: ${item.title} → ${result.date} (already passed, waiting for fresh sources)`
+        );
+        const { error: staleUpdateError } = await supabase
+          .from("watchlist_items")
+          .update({
+            last_checked_at: now.toISOString(),
+            last_search_found: true,
+            last_search_notes: result.notes ?? null,
+            updated_at: now.toISOString(),
+          })
+          .eq("id", item.id);
+        if (staleUpdateError) {
+          console.error(
+            `[watchlist-runner] [${scanned}/${total}] stale-match cooldown refresh failed for ${item.title}: ${staleUpdateError.message}`
+          );
+          errored++;
+          items.push({
+            id: item.id,
+            action: "errored",
+            error: `stale-match cooldown refresh failed: ${staleUpdateError.message}`,
+            result,
+          });
+          continue;
+        }
+        skipped++;
+        items.push({ id: item.id, action: "skipped", result });
+        continue;
+      }
+
       console.log(
         `[watchlist-runner] [${scanned}/${total}] match: ${item.title} → ${result.date} (confidence=${result.confidence})`
       );

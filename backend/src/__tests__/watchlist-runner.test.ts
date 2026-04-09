@@ -488,6 +488,84 @@ describe("runWatchlistSweep", () => {
     expect(erroredItem?.result).toBeDefined();
   });
 
+  it("stale match on a recurring item is skipped, not scheduled", async () => {
+    // Runner "now" is fixed to 2026-04-09. Brave returns a date that's
+    // already in the past (2026-04-04, the 2026 NCAA Final Four).
+    const item = makeItem({ id: "ncaa", title: "NCAA Final Four", type: "recurring" });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () => makeSearchResult({ date: "2026-04-04", confidence: "high" }));
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      now: new Date("2026-04-09T12:00:00.000Z"),
+      interItemDelayMs: 0,
+    });
+
+    // No confirmed_dates insert at all — the stale match short-circuits
+    // before the insert.
+    expect(fake.inserts).toHaveLength(0);
+
+    // The watchlist item gets a cooldown refresh but no status change
+    // and no known_next_date set.
+    expect(fake.updates).toHaveLength(1);
+    const patch = fake.updates[0]?.patch ?? {};
+    expect(patch.status).toBeUndefined();
+    expect(patch.known_next_date).toBeUndefined();
+    expect(patch.last_checked_at).toBeTruthy();
+    expect(patch.last_search_found).toBe(true);
+
+    // Counters
+    expect(summary.scanned).toBe(1);
+    expect(summary.scheduled).toBe(0);
+    expect(summary.resolved).toBe(0);
+    expect(summary.skipped).toBe(1);
+    expect(summary.errored).toBe(0);
+    expect(summary.items[0]?.action).toBe("skipped");
+  });
+
+  it("recurring match on today's date is scheduled, not flagged as stale", async () => {
+    // Edge case: Brave returns today's date exactly. The guard uses
+    // strict `< today`, so today should fall through to the normal
+    // schedule path.
+    const item = makeItem({ id: "masters", title: "The Masters", type: "recurring" });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () => makeSearchResult({ date: "2026-04-09", confidence: "high" }));
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      now: new Date("2026-04-09T12:00:00.000Z"),
+      interItemDelayMs: 0,
+    });
+
+    expect(summary.scheduled).toBe(1);
+    expect(summary.skipped).toBe(0);
+    expect(fake.inserts).toHaveLength(1);
+    expect(fake.updates[0]?.patch.known_next_date).toBe("2026-04-09");
+  });
+
+  it("one-time item with a past date still resolves (stale guard does not apply)", async () => {
+    // A one-time item that matches a date Brave thinks already happened
+    // should still resolve — it's a legitimate late resolution, not a
+    // reactivation loop risk.
+    const item = makeItem({ id: "reik", title: "Reik Live in Austin", type: "one-time" });
+    const fake = createFakeSupabase({ selectRows: [item] });
+    const searchFn = vi.fn(async () => makeSearchResult({ date: "2024-03-02", confidence: "medium" }));
+
+    const summary = await runWatchlistSweep({
+      supabase: fake.client as unknown as import("@supabase/supabase-js").SupabaseClient,
+      searchFn,
+      now: new Date("2026-04-09T12:00:00.000Z"),
+      interItemDelayMs: 0,
+    });
+
+    expect(summary.resolved).toBe(1);
+    expect(summary.skipped).toBe(0);
+    expect(fake.inserts).toHaveLength(1);
+    expect(fake.updates[0]?.patch.status).toBe("resolved");
+  });
+
   it("series items still resolve (v1 — follow-on plan will change this)", async () => {
     const item = makeItem({ id: "f1", title: "F1 2026 Season", type: "series" });
     const fake = createFakeSupabase({ selectRows: [item] });
