@@ -110,6 +110,8 @@ export async function runWatchlistSweep(
   let errored = 0;
 
   const eligible = (rows ?? []) as WatchlistItemRow[];
+  const total = eligible.length;
+  console.log(`[watchlist-runner] loaded ${total} eligible item(s) (cooldown=${cooldownHours}h, limit=${limit})`);
 
   for (const item of eligible) {
     scanned++;
@@ -118,17 +120,20 @@ export async function runWatchlistSweep(
     }
 
     const query = buildQuery(item);
+    console.log(`[watchlist-runner] [${scanned}/${total}] searching: "${query}" (id=${item.id})`);
 
     let result: DateSearchResult;
     try {
       result = await searchFn(query);
     } catch (err) {
       // Do NOT update last_checked_at — let the next run retry this item.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[watchlist-runner] [${scanned}/${total}] errored: ${item.title} — ${msg}`);
       errored++;
       items.push({
         id: item.id,
         action: "errored",
-        error: err instanceof Error ? err.message : String(err),
+        error: msg,
       });
       continue;
     }
@@ -137,6 +142,9 @@ export async function runWatchlistSweep(
     const isMatch = hasUsableDate && meetsThreshold(result.confidence, item.confidence_threshold);
 
     if (isMatch && result.date && result.confidence) {
+      console.log(
+        `[watchlist-runner] [${scanned}/${total}] match: ${item.title} → ${result.date} (confidence=${result.confidence})`
+      );
       // 1. Insert into confirmed_dates (same column layout as executeAddConfirmedDate)
       const confirmedId = crypto.randomUUID();
       const { error: insertError } = await supabase.from("confirmed_dates").insert({
@@ -152,6 +160,9 @@ export async function runWatchlistSweep(
       });
 
       if (insertError) {
+        console.error(
+          `[watchlist-runner] [${scanned}/${total}] confirmed_dates insert failed for ${item.title}: ${insertError.message}`
+        );
         errored++;
         items.push({
           id: item.id,
@@ -176,6 +187,9 @@ export async function runWatchlistSweep(
 
       if (updateError) {
         // Partial-write hazard: confirmed_dates row exists but watchlist still active.
+        console.error(
+          `[watchlist-runner] [${scanned}/${total}] PARTIAL-WRITE: confirmed_dates id=${confirmedId} created but watchlist update failed for ${item.title}: ${updateError.message}`
+        );
         errored++;
         items.push({
           id: item.id,
@@ -186,12 +200,20 @@ export async function runWatchlistSweep(
         continue;
       }
 
+      console.log(`[watchlist-runner] [${scanned}/${total}] resolved: ${item.title}`);
       resolved++;
       items.push({ id: item.id, action: "resolved", result });
       continue;
     }
 
     // Non-match (either not found, no date, or below threshold) — record check metadata
+    const reason = !result.found
+      ? "no date found"
+      : !hasUsableDate
+        ? "no usable date"
+        : `below threshold (got=${result.confidence}, need=${item.confidence_threshold ?? "medium"})`;
+    console.log(`[watchlist-runner] [${scanned}/${total}] skipped: ${item.title} — ${reason}`);
+
     const { error: updateError } = await supabase
       .from("watchlist_items")
       .update({
@@ -203,6 +225,9 @@ export async function runWatchlistSweep(
       .eq("id", item.id);
 
     if (updateError) {
+      console.error(
+        `[watchlist-runner] [${scanned}/${total}] last_checked_at update failed for ${item.title}: ${updateError.message}`
+      );
       errored++;
       items.push({
         id: item.id,
@@ -216,6 +241,10 @@ export async function runWatchlistSweep(
     skipped++;
     items.push({ id: item.id, action: "skipped", result });
   }
+
+  console.log(
+    `[watchlist-runner] sweep complete: scanned=${scanned}, resolved=${resolved}, skipped=${skipped}, errored=${errored}`
+  );
 
   return {
     scanned,

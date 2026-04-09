@@ -45,18 +45,21 @@ const ChatRequestSchema = z.object({
 });
 
 app.post("/cron/run-watchlist", cronLimiter, async (req, res) => {
+  console.log(`[cron] /cron/run-watchlist hit from ${req.ip} at ${new Date().toISOString()}`);
   const { cronSecret } = getConfig();
   if (!verifyCronSecret(req.headers.authorization, cronSecret)) {
+    console.warn("[cron] rejected: invalid or missing CRON_SECRET");
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
+  console.log("[cron] starting watchlist sweep");
   try {
     const summary = await runWatchlistSweep();
     console.log(JSON.stringify({ kind: "watchlist-run", ...summary }));
     res.json(summary);
   } catch (err) {
-    console.error("Watchlist run error:", err);
+    console.error("[cron] watchlist run error:", err);
     res.status(500).json({ error: "Watchlist run failed" });
   }
 });
