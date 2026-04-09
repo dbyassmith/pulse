@@ -27,7 +27,7 @@ const AddConfirmedDateInput = z.object({
 
 const CreateWatchlistItemInput = z.object({
   title: z.string().min(1).max(200),
-  type: z.enum(["one-time", "recurring-irregular", "recurring-predictable", "series", "category-watch"]).default("one-time"),
+  type: z.enum(["one-time", "recurring", "series", "category-watch"]).default("one-time"),
   category: z.string().optional(),
   subcategory: z.string().optional(),
   notes: z.string().optional(),
@@ -69,7 +69,7 @@ const UpdateConfirmedDateInput = z.object({
 const UpdateWatchlistItemInput = z.object({
   id: z.string().min(1),
   title: z.string().min(1).max(200).optional(),
-  type: z.enum(["one-time", "recurring-irregular", "recurring-predictable", "series", "category-watch"]).optional(),
+  type: z.enum(["one-time", "recurring", "series", "category-watch"]).optional(),
   category: z.string().optional(),
   subcategory: z.string().optional(),
   notes: z.string().optional(),

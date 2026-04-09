@@ -83,13 +83,12 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
           type: "string",
           enum: [
             "one-time",
-            "recurring-irregular",
-            "recurring-predictable",
+            "recurring",
             "series",
             "category-watch",
           ],
           description:
-            "Event type. Use 'one-time' for most events, 'recurring-irregular' for annual events with varying dates",
+            "Event type. 'one-time' for single events (default). 'recurring' for events that repeat on any cadence, even if dates vary (WWDC, elections, Super Bowl). 'series' for multi-part events with many related dates (F1 season, concert tour) — when identified, each event in the series should become its own one-time item. 'category-watch' for ongoing category monitoring where you always want the next occurrence tracked ('next Apple event', 'next SpaceX launch').",
         },
         category: {
           type: "string",
@@ -249,8 +248,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
           type: "string",
           enum: [
             "one-time",
-            "recurring-irregular",
-            "recurring-predictable",
+            "recurring",
             "series",
             "category-watch",
           ],

@@ -17,8 +17,7 @@ struct WatchlistItem: Codable, Identifiable, Hashable {
     var typeLabel: String {
         switch type {
         case "one-time": return "One-time"
-        case "recurring-irregular": return "Recurring"
-        case "recurring-predictable": return "Recurring"
+        case "recurring": return "Recurring"
         case "series": return "Series"
         case "category-watch": return "Watching"
         default: return type.capitalized

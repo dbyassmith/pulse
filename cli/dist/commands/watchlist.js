@@ -6,8 +6,7 @@ import matter from "gray-matter";
 import { getSupabaseClient } from "../lib/supabase.js";
 const VALID_TYPES = [
     "one-time",
-    "recurring-irregular",
-    "recurring-predictable",
+    "recurring",
     "series",
     "category-watch",
 ];
@@ -43,6 +42,7 @@ function parseWatchlistFile(filePath) {
         title: data.title,
         type: type,
         category: typeof data.category === "string" ? data.category.toLowerCase() : null,
+        subcategory: typeof data.subcategory === "string" ? data.subcategory.toLowerCase().trim() : null,
         notes: typeof data.notes === "string" ? data.notes : null,
         added: data.added ? new Date(data.added).toISOString() : new Date().toISOString(),
     };
@@ -55,6 +55,7 @@ async function syncFile(filePath, supabase, userId) {
         title: fields.title,
         type: fields.type,
         category: fields.category,
+        subcategory: fields.subcategory,
         notes: fields.notes,
         added: fields.added,
         status: "active",
@@ -128,6 +129,7 @@ watchlistCommand
     .option("--source <text>", "Source URL")
     .option("--notes <text>", "Additional notes")
     .option("--category <text>", "Category")
+    .option("--subcategory <text>", "Subcategory")
     .action(async (opts) => {
     // Validate date
     if (!DATE_RE.test(opts.date)) {
@@ -140,44 +142,48 @@ watchlistCommand
         process.exit(1);
     }
     const { supabase, userId } = await requireAuth();
-    // Step 1: Insert into confirmed_dates (higher-value write)
+    // Step 1: Fetch watchlist item to get title, category, subcategory
+    const { data: watchlistItem, error: fetchError } = await supabase
+        .from("watchlist_items")
+        .select("title, category, subcategory")
+        .eq("id", opts.id)
+        .eq("user_id", userId)
+        .single();
+    if (fetchError) {
+        console.warn(`Warning: Could not fetch watchlist item: ${fetchError.message}`);
+    }
+    const title = watchlistItem?.title || opts.id;
+    const category = opts.category?.toLowerCase() ?? watchlistItem?.category ?? null;
+    const subcategory = opts.subcategory?.toLowerCase().trim() ?? watchlistItem?.subcategory ?? null;
+    // Step 2: Insert into confirmed_dates
     const dateId = uuidv4();
     const { error: dateError } = await supabase.from("confirmed_dates").upsert({
         id: dateId,
         user_id: userId,
-        title: opts.id, // Will be overwritten below if we can fetch the title
+        title,
         date: opts.date,
         confidence: opts.confidence,
         source: opts.source ?? null,
         notes: opts.notes ?? null,
-        category: opts.category?.toLowerCase() ?? null,
+        category,
+        subcategory,
     }, { onConflict: "id" });
     if (dateError) {
         console.error(`Failed to add confirmed date: ${dateError.message}`);
         process.exit(1);
     }
-    // Step 2: Update watchlist_items status (lower-priority write)
-    const { data: watchlistItem, error: updateError } = await supabase
+    // Step 3: Update watchlist_items status
+    const { error: updateError } = await supabase
         .from("watchlist_items")
         .update({
         status: "resolved",
         updated_at: new Date().toISOString(),
     })
         .eq("id", opts.id)
-        .eq("user_id", userId)
-        .select("title")
-        .single();
+        .eq("user_id", userId);
     if (updateError) {
         console.warn(`Warning: Date saved but watchlist update failed: ${updateError.message}`);
         console.warn("Re-run 'goldfish watchlist sync file <path>' to repair.");
-    }
-    const title = watchlistItem?.title || opts.id;
-    // Update the confirmed_dates title if we got it from watchlist
-    if (watchlistItem?.title) {
-        await supabase
-            .from("confirmed_dates")
-            .update({ title: watchlistItem.title })
-            .eq("id", dateId);
     }
     console.log(`Resolved: ${title} → ${opts.date}`);
 });

@@ -7,8 +7,7 @@ import { getSupabaseClient } from "../lib/supabase.js";
 
 const VALID_TYPES = [
   "one-time",
-  "recurring-irregular",
-  "recurring-predictable",
+  "recurring",
   "series",
   "category-watch",
 ] as const;

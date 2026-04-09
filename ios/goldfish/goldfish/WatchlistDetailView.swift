@@ -21,7 +21,7 @@ struct WatchlistDetailView: View {
         "politics", "local"
     ]
     private static let types = [
-        "one-time", "recurring-irregular", "recurring-predictable", "series", "category-watch"
+        "one-time", "recurring", "series", "category-watch"
     ]
 
     init(item: WatchlistItem, onDelete: @escaping () -> Void, onUpdate: @escaping (WatchlistItem) -> Void) {
@@ -34,8 +34,7 @@ struct WatchlistDetailView: View {
     private func typeDisplayName(_ type: String) -> String {
         switch type {
         case "one-time": return "One-time"
-        case "recurring-irregular": return "Recurring (Irregular)"
-        case "recurring-predictable": return "Recurring (Predictable)"
+        case "recurring": return "Recurring"
         case "series": return "Series"
         case "category-watch": return "Category Watch"
         default: return type.capitalized
