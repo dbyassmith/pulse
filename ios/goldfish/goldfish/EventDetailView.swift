@@ -119,7 +119,19 @@ struct EventDetailView: View {
                             set: { editingDate.source = $0.isEmpty ? nil : $0 }
                         ))
                     } else if let source = date.source {
-                        DetailRow(label: "Source", value: source)
+                        if let url = sourceURL(from: source) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Source")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Link(source, destination: url)
+                                    .font(.body)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                        } else {
+                            DetailRow(label: "Source", value: source)
+                        }
                     }
                 }
                 .listRowBackground(bgColor)
@@ -188,6 +200,16 @@ struct EventDetailView: View {
         } message: {
             Text(errorMessage ?? "An unknown error occurred.")
         }
+    }
+
+    private func sourceURL(from source: String) -> URL? {
+        let trimmed = source.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let candidate = trimmed.lowercased().hasPrefix("http://") || trimmed.lowercased().hasPrefix("https://")
+            ? trimmed
+            : "https://\(trimmed)"
+        guard let url = URL(string: candidate), let host = url.host, host.contains(".") else { return nil }
+        return url
     }
 
     private func save() async {

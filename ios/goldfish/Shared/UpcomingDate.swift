@@ -35,7 +35,7 @@ struct UpcomingDate: Codable, Identifiable, Hashable {
         guard let days = daysRemaining else { return date }
         switch days {
         case 0: return "Today"
-        case 1: return "1 day"
+        case 1: return "Tomorrow"
         default: return "\(days) days"
         }
     }
